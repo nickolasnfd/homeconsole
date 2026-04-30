@@ -4,6 +4,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
+import { ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { AddItemButton } from "@/components/AddItemButton";
 import { FinanceForm } from "@/components/forms/FinanceForm";
@@ -50,6 +51,33 @@ export default function Finance() {
       <AddItemButton title="Nova despesa" label="Adicionar despesa">
         {(close) => <FinanceForm onDone={close} />}
       </AddItemButton>
+
+      {/* Hero balance card */}
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-card border border-border/60 shadow-elevated p-5">
+        <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-primary/15 blur-2xl" />
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Resumo do mês</p>
+        <p className="mt-1 text-4xl font-bold tracking-tight">{formatCurrency(pendingTotal + paidTotal)}</p>
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-full bg-success/15 flex items-center justify-center">
+              <ArrowUp className="h-4 w-4 text-success" />
+            </div>
+            <div>
+              <p className="text-sm font-bold tabular-nums">{formatCurrency(paidTotal)}</p>
+              <p className="text-[10px] text-muted-foreground">Pago</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-full bg-destructive/15 flex items-center justify-center">
+              <ArrowDown className="h-4 w-4 text-destructive" />
+            </div>
+            <div>
+              <p className="text-sm font-bold tabular-nums">{formatCurrency(pendingTotal)}</p>
+              <p className="text-[10px] text-muted-foreground">Pendente</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-card border border-border/60 rounded-2xl p-4 shadow-card">

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useTable } from "@/hooks/useTable";
 import { daysUntil, formatCurrency, formatDate } from "@/lib/format";
-import { AlertTriangle, Package, Wallet, Wrench, ArrowUp, ArrowDown } from "lucide-react";
+import { AlertTriangle, Package, Wallet, Wrench } from "lucide-react";
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
@@ -35,65 +35,6 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-5">
-      {/* Hero balance card */}
-      <div className="relative overflow-hidden rounded-[28px] bg-gradient-card border border-border/60 shadow-elevated p-5">
-        <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-primary/15 blur-2xl" />
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Resumo do mês</p>
-        <p className="mt-1 text-4xl font-bold tracking-tight">{formatCurrency(pendingTotal + finances.data?.filter((f:any)=>f.status==="paid").reduce((s:number,f:any)=>s+Number(f.amount||0),0) || 0)}</p>
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-full bg-success/15 flex items-center justify-center">
-              <ArrowUp className="h-4 w-4 text-success" />
-            </div>
-            <div>
-              <p className="text-sm font-bold tabular-nums">{formatCurrency((finances.data ?? []).filter((f:any)=>f.status==="paid").reduce((s:number,f:any)=>s+Number(f.amount||0),0))}</p>
-              <p className="text-[10px] text-muted-foreground">Pago</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-full bg-destructive/15 flex items-center justify-center">
-              <ArrowDown className="h-4 w-4 text-destructive" />
-            </div>
-            <div>
-              <p className="text-sm font-bold tabular-nums">{formatCurrency(pendingTotal)}</p>
-              <p className="text-[10px] text-muted-foreground">Pendente</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="-mx-4 px-4 overflow-x-auto snap-x snap-mandatory scrollbar-none">
-        <div className="flex gap-3 pb-1">
-          <SummaryCard
-            to="/maintenance"
-            icon={<Wrench className="h-5 w-5" />}
-            label="Manutenções críticas"
-            value={criticalMaint.length}
-            total={(maintenance.data ?? []).length}
-            hint={criticalMaint.length ? `${criticalMaint[0].title} • vence ${formatDate(criticalMaint[0].next_due_date)}` : "Tudo em dia"}
-            tone={criticalMaint.length ? "danger" : "success"}
-          />
-          <SummaryCard
-            to="/inventory"
-            icon={<Package className="h-5 w-5" />}
-            label="Alertas de estoque baixo"
-            value={lowStock.length}
-            total={(inventory.data ?? []).length}
-            hint={lowStock.length ? `${lowStock[0].name} abaixo do mínimo` : "Estoque saudável"}
-            tone={lowStock.length ? "warning" : "success"}
-          />
-          <SummaryCard
-            to="/finance"
-            icon={<Wallet className="h-5 w-5" />}
-            label="Contas pendentes"
-            value={pendingBills.length}
-            total={(finances.data ?? []).length}
-            hint={pendingBills.length ? `${formatCurrency(pendingTotal)} em aberto` : "Nada a pagar"}
-            tone={pendingBills.length ? "danger" : "success"}
-          />
-        </div>
-      </div>
-
       <Section title="Despesas mensais" subtitle="Últimos 6 meses">
         <div className="h-48 -mx-2">
           <ResponsiveContainer width="100%" height="100%">
@@ -122,6 +63,38 @@ export default function Dashboard() {
         total={(inventory.data ?? []).length}
         lowCount={lowStock.length}
       />
+
+      <div className="-mx-4 px-4 overflow-x-auto snap-x snap-mandatory scrollbar-none">
+        <div className="flex gap-3 pb-1">
+          <SummaryCard
+            to="/maintenance"
+            icon={<Wrench className="h-5 w-5" />}
+            label="Manutenções críticas"
+            value={criticalMaint.length}
+            total={(maintenance.data ?? []).length}
+            hint={criticalMaint.length ? `${criticalMaint[0].title} • vence ${formatDate(criticalMaint[0].next_due_date)}` : "Tudo em dia"}
+            tone={criticalMaint.length ? "danger" : "success"}
+          />
+          <SummaryCard
+            to="/finance"
+            icon={<Wallet className="h-5 w-5" />}
+            label="Contas pendentes"
+            value={pendingBills.length}
+            total={(finances.data ?? []).length}
+            hint={pendingBills.length ? `${formatCurrency(pendingTotal)} em aberto` : "Nada a pagar"}
+            tone={pendingBills.length ? "danger" : "success"}
+          />
+          <SummaryCard
+            to="/inventory"
+            icon={<Package className="h-5 w-5" />}
+            label="Alertas de estoque baixo"
+            value={lowStock.length}
+            total={(inventory.data ?? []).length}
+            hint={lowStock.length ? `${lowStock[0].name} abaixo do mínimo` : "Estoque saudável"}
+            tone={lowStock.length ? "warning" : "success"}
+          />
+        </div>
+      </div>
 
       {criticalMaint.length > 0 && (
         <Section title="Tarefas próximas" subtitle="Próximos 7 dias">
