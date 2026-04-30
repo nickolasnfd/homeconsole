@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +12,12 @@ import Maintenance from "@/pages/app/Maintenance";
 import Finance from "@/pages/app/Finance";
 
 const queryClient = new QueryClient();
+
+const FabRouteAware = () => {
+  const { pathname } = useLocation();
+  if (pathname !== "/") return null;
+  return <Fab />;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
