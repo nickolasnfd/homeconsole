@@ -8,7 +8,7 @@ const tabs = [
   { to: "/maintenance", label: "Tarefas", icon: Wrench },
   { to: "/", label: "Início", icon: Home, end: true, center: true },
   { to: "/finance", label: "Finanças", icon: Wallet },
-  { to: "/settings", label: "Ajustes", icon: Settings },
+  { to: "/settings", label: "Ajustes", icon: Settings, disabled: true },
 ];
 
 const titles: Record<string, { title: string; subtitle: string }> = {
@@ -71,6 +71,20 @@ export function AppShell({ children }: { children: ReactNode }) {
                       <tab.icon className="h-6 w-6" strokeWidth={2.4} />
                     </span>
                   </NavLink>
+                );
+              }
+              if (tab.disabled) {
+                return (
+                  <button
+                    key={tab.to}
+                    type="button"
+                    disabled
+                    aria-disabled="true"
+                    className="flex flex-col items-center justify-center gap-1 py-2 rounded-2xl text-muted-foreground/40 cursor-not-allowed"
+                  >
+                    <tab.icon className="h-5 w-5" strokeWidth={2.2} />
+                    <span className="text-[10px] font-semibold tracking-wide">{tab.label}</span>
+                  </button>
                 );
               }
               return (
