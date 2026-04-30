@@ -118,9 +118,10 @@ export default function Dashboard() {
         </div>
       </Section>
 
-      <Section title="Níveis de estoque" subtitle="Top 5 itens">
-        <InventoryMiniChart data={(inventory.data ?? []).slice(0, 5)} />
-      </Section>
+      <StockHealthCard
+        total={(inventory.data ?? []).length}
+        lowCount={lowStock.length}
+      />
 
       {criticalMaint.length > 0 && (
         <Section title="Tarefas próximas" subtitle="Próximos 7 dias">
@@ -243,5 +244,82 @@ function InventoryMiniChart({ data }: { data: any[] }) {
         );
       })}
     </div>
+  );
+}
+
+function StockHealthCard({ total, lowCount }: { total: number; lowCount: number }) {
+  const pct = total > 0 ? Math.round((lowCount / total) * 100) : 0;
+  let level: "good" | "attention" | "critical" = "good";
+  if (pct > 50) level = "critical";
+  else if (pct >= 20) level = "attention";
+
+  const cfg = {
+    good: {
+      label: "Bom nível",
+      desc: "Estoque saudável",
+      tone: "bg-success/15 text-success border-success/30",
+      bar: "bg-success",
+      dot: "bg-success",
+    },
+    attention: {
+      label: "Atenção",
+      desc: "Alguns itens precisam de reposição",
+      tone: "bg-warning/15 text-warning border-warning/30",
+      bar: "bg-warning",
+      dot: "bg-warning",
+    },
+    critical: {
+      label: "Crítico",
+      desc: "Muitos itens em falta",
+      tone: "bg-destructive/10 text-destructive border-destructive/30",
+      bar: "bg-destructive",
+      dot: "bg-destructive",
+    },
+  }[level];
+
+  return (
+    <Link
+      to="/inventory"
+      className="block bg-card border border-border/60 rounded-[22px] p-4 shadow-card active:scale-[0.99] transition-transform"
+    >
+      <div className="flex items-baseline justify-between mb-3">
+        <h2 className="text-sm font-semibold">Níveis de estoque</h2>
+        <span className="text-[11px] text-muted-foreground tabular-nums">{lowCount}/{total} em falta</span>
+      </div>
+
+      {total === 0 ? (
+        <p className="text-xs text-muted-foreground py-2 text-center">Nenhum item cadastrado.</p>
+      ) : (
+        <>
+          <div className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 ${cfg.tone}`}>
+            <span className={`h-2.5 w-2.5 rounded-full ${cfg.dot} shadow-[0_0_0_3px_hsl(var(--background))]`} />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold leading-tight">{cfg.label}</p>
+              <p className="text-[11px] opacity-80 truncate">{cfg.desc}</p>
+            </div>
+            <span className="text-base font-bold tabular-nums">{pct}%</span>
+          </div>
+
+          <div className="mt-3 h-1.5 bg-muted rounded-full overflow-hidden flex">
+            <div className="h-full bg-success/70" style={{ width: "20%" }} />
+            <div className="h-full bg-warning/70" style={{ width: "30%" }} />
+            <div className="h-full bg-destructive/70" style={{ width: "50%" }} />
+          </div>
+          <div className="relative mt-1 h-3">
+            <div
+              className="absolute -top-[7px] h-3 w-0.5 bg-foreground rounded-full"
+              style={{ left: `calc(${Math.min(100, pct)}% - 1px)` }}
+              aria-hidden
+            />
+          </div>
+
+          <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
+            <span>Bom &lt;20%</span>
+            <span>Atenção 20-50%</span>
+            <span>Crítico &gt;50%</span>
+          </div>
+        </>
+      )}
+    </Link>
   );
 }
