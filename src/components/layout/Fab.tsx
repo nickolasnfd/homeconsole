@@ -28,12 +28,12 @@ export function Fab() {
       <DialogTrigger asChild>
         <button
           aria-label="Adicionar novo registro"
-          className="fixed z-50 bottom-28 right-5 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-fab flex items-center justify-center active:scale-95 transition-transform"
+          className="fixed z-50 bottom-32 right-5 h-14 w-14 rounded-full bg-gradient-primary text-primary-foreground shadow-fab flex items-center justify-center active:scale-95 transition-transform"
         >
           <Plus className="h-6 w-6" strokeWidth={2.6} />
         </button>
       </DialogTrigger>
-      <DialogContent className="max-w-md rounded-3xl">
+      <DialogContent className="max-w-md rounded-3xl bg-card border-border/60">
         <DialogHeader>
           <DialogTitle>Adicionar rápido</DialogTitle>
         </DialogHeader>
