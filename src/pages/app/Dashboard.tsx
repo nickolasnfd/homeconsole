@@ -68,6 +68,7 @@ export default function Dashboard() {
           icon={<Wrench className="h-5 w-5" />}
           label="Manutenções críticas"
           value={criticalMaint.length}
+          total={(maintenance.data ?? []).length}
           hint={criticalMaint.length ? `${criticalMaint[0].title} • vence ${formatDate(criticalMaint[0].next_due_date)}` : "Tudo em dia"}
           tone={criticalMaint.length ? "danger" : "success"}
         />
@@ -76,6 +77,7 @@ export default function Dashboard() {
           icon={<Package className="h-5 w-5" />}
           label="Alertas de estoque baixo"
           value={lowStock.length}
+          total={(inventory.data ?? []).length}
           hint={lowStock.length ? `${lowStock[0].name} abaixo do mínimo` : "Estoque saudável"}
           tone={lowStock.length ? "warning" : "success"}
         />
@@ -84,6 +86,7 @@ export default function Dashboard() {
           icon={<Wallet className="h-5 w-5" />}
           label="Contas pendentes"
           value={pendingBills.length}
+          total={(finances.data ?? []).length}
           hint={pendingBills.length ? `${formatCurrency(pendingTotal)} em aberto` : "Nada a pagar"}
           tone={pendingBills.length ? "danger" : "success"}
         />
@@ -136,14 +139,18 @@ export default function Dashboard() {
   );
 }
 
-function SummaryCard({ to, icon, label, value, hint, tone }: {
-  to: string; icon: React.ReactNode; label: string; value: number; hint: string;
+function SummaryCard({ to, icon, label, value, total, hint, tone }: {
+  to: string; icon: React.ReactNode; label: string; value: number; total: number; hint: string;
   tone: "success" | "warning" | "danger";
 }) {
   const ring =
     tone === "danger" ? "bg-destructive/10 text-destructive" :
     tone === "warning" ? "bg-warning/15 text-warning" :
     "bg-success/15 text-success";
+  const stroke =
+    tone === "danger" ? "hsl(var(--destructive))" :
+    tone === "warning" ? "hsl(var(--warning))" :
+    "hsl(var(--success))";
   return (
     <Link to={to} className="block bg-card border border-border/60 rounded-2xl p-4 shadow-card active:scale-[0.99] transition-transform">
       <div className="flex items-center gap-3">
@@ -152,9 +159,46 @@ function SummaryCard({ to, icon, label, value, hint, tone }: {
           <p className="text-xs font-medium text-muted-foreground">{label}</p>
           <p className="text-2xl font-bold leading-tight">{value}</p>
         </div>
+        <HalfMoonGauge value={value} total={total} stroke={stroke} />
       </div>
       <p className="text-xs text-muted-foreground mt-2 truncate">{hint}</p>
     </Link>
+  );
+}
+
+function HalfMoonGauge({ value, total, stroke }: { value: number; total: number; stroke: string }) {
+  const ratio = total > 0 ? Math.min(1, value / total) : 0;
+  const pct = Math.round(ratio * 100);
+  // Semicircle: radius 30, stroke 7, viewBox 76x42
+  const r = 30;
+  const cx = 38;
+  const cy = 36;
+  const circumference = Math.PI * r; // half circle length
+  const dash = circumference * ratio;
+  return (
+    <div className="relative shrink-0" style={{ width: 76, height: 44 }} aria-label={`${value} de ${total}`}>
+      <svg width={76} height={44} viewBox="0 0 76 44">
+        <path
+          d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
+          fill="none"
+          stroke="hsl(var(--muted))"
+          strokeWidth={7}
+          strokeLinecap="round"
+        />
+        <path
+          d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
+          fill="none"
+          stroke={stroke}
+          strokeWidth={7}
+          strokeLinecap="round"
+          strokeDasharray={`${dash} ${circumference}`}
+          style={{ transition: "stroke-dasharray 400ms ease" }}
+        />
+      </svg>
+      <span className="absolute inset-x-0 bottom-0 text-center text-[10px] font-semibold tabular-nums text-muted-foreground">
+        {pct}%
+      </span>
+    </div>
   );
 }
 
