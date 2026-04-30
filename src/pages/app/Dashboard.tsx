@@ -62,38 +62,37 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <section className="bg-card border border-border/60 rounded-[22px] p-3 shadow-card">
-        <div className="flex items-baseline justify-between mb-2 px-1">
-          <h2 className="text-sm font-semibold">Status geral</h2>
-          <span className="text-[11px] text-muted-foreground">Toque para ver</span>
-        </div>
-        <div className="grid grid-cols-3 gap-1.5">
-          <MiniStat
+      <div className="-mx-4 px-4 overflow-x-auto snap-x snap-mandatory scrollbar-none">
+        <div className="flex gap-3 pb-1">
+          <SummaryCard
             to="/maintenance"
-            icon={<Wrench className="h-3.5 w-3.5" />}
-            label="Manut."
+            icon={<Wrench className="h-5 w-5" />}
+            label="Manutenções críticas"
             value={criticalMaint.length}
             total={(maintenance.data ?? []).length}
+            hint={criticalMaint.length ? `${criticalMaint[0].title} • vence ${formatDate(criticalMaint[0].next_due_date)}` : "Tudo em dia"}
             tone={criticalMaint.length ? "danger" : "success"}
           />
-          <MiniStat
+          <SummaryCard
             to="/inventory"
-            icon={<Package className="h-3.5 w-3.5" />}
-            label="Estoque"
+            icon={<Package className="h-5 w-5" />}
+            label="Alertas de estoque baixo"
             value={lowStock.length}
             total={(inventory.data ?? []).length}
+            hint={lowStock.length ? `${lowStock[0].name} abaixo do mínimo` : "Estoque saudável"}
             tone={lowStock.length ? "warning" : "success"}
           />
-          <MiniStat
+          <SummaryCard
             to="/finance"
-            icon={<Wallet className="h-3.5 w-3.5" />}
-            label="Contas"
+            icon={<Wallet className="h-5 w-5" />}
+            label="Contas pendentes"
             value={pendingBills.length}
             total={(finances.data ?? []).length}
+            hint={pendingBills.length ? `${formatCurrency(pendingTotal)} em aberto` : "Nada a pagar"}
             tone={pendingBills.length ? "danger" : "success"}
           />
         </div>
-      </section>
+      </div>
 
       <Section title="Despesas mensais" subtitle="Últimos 6 meses">
         <div className="h-48 -mx-2">
@@ -142,8 +141,8 @@ export default function Dashboard() {
   );
 }
 
-function MiniStat({ to, icon, label, value, total, tone }: {
-  to: string; icon: React.ReactNode; label: string; value: number; total: number;
+function SummaryCard({ to, icon, label, value, total, hint, tone }: {
+  to: string; icon: React.ReactNode; label: string; value: number; total: number; hint: string;
   tone: "success" | "warning" | "danger";
 }) {
   const ring =
@@ -157,19 +156,17 @@ function MiniStat({ to, icon, label, value, total, tone }: {
   return (
     <Link
       to={to}
-      className="flex flex-col items-center gap-1 rounded-2xl p-2 active:scale-[0.97] transition-transform"
+      className="snap-start shrink-0 w-[85%] bg-card border border-border/60 rounded-2xl p-4 shadow-card active:scale-[0.99] transition-transform"
     >
-      <div className="relative">
-        <HalfMoonGauge value={value} total={total} stroke={stroke} />
-        <div className={`absolute left-1/2 -translate-x-1/2 top-1 h-6 w-6 rounded-full flex items-center justify-center ${ring}`}>
-          {icon}
+      <div className="flex items-center gap-3">
+        <div className={`h-11 w-11 rounded-2xl flex items-center justify-center ${ring}`}>{icon}</div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium text-muted-foreground">{label}</p>
+          <p className="text-2xl font-bold leading-tight">{value}</p>
         </div>
+        <HalfMoonGauge value={value} total={total} stroke={stroke} />
       </div>
-      <div className="flex items-baseline gap-1">
-        <span className="text-lg font-bold leading-none tabular-nums">{value}</span>
-        <span className="text-[10px] text-muted-foreground">/{total}</span>
-      </div>
-      <p className="text-[10px] font-medium text-muted-foreground">{label}</p>
+      <p className="text-xs text-muted-foreground mt-2 truncate">{hint}</p>
     </Link>
   );
 }
