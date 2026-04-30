@@ -11,14 +11,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { addDaysISO, todayISO } from "@/lib/format";
 import { toast } from "sonner";
 
-export function MaintenanceForm({ onDone }: { onDone: () => void }) {
+export function MaintenanceForm({ onDone, initial }: { onDone: () => void; initial?: any }) {
   const qc = useQueryClient();
+  const isEdit = !!initial?.id;
   const [form, setForm] = useState({
-    title: "",
-    description: "",
-    frequency_days: "30",
-    last_performed_date: todayISO(),
-    priority_level: "medium",
+    title: initial?.title ?? "",
+    description: initial?.description ?? "",
+    frequency_days: String(initial?.frequency_days ?? "30"),
+    last_performed_date: initial?.last_performed_date ?? todayISO(),
+    priority_level: initial?.priority_level ?? "medium",
   });
   const [saving, setSaving] = useState(false);
 
@@ -28,21 +29,26 @@ export function MaintenanceForm({ onDone }: { onDone: () => void }) {
     setSaving(true);
     const freq = Math.max(1, Number(form.frequency_days) || 30);
     const next_due_date = addDaysISO(form.last_performed_date || todayISO(), freq);
-    const { data, error } = await supabase.from("maintenance").insert({
+    const payload = {
       title: form.title.trim(),
       description: form.description.trim() || null,
       frequency_days: freq,
       last_performed_date: form.last_performed_date || null,
       next_due_date,
       priority_level: form.priority_level,
-    }).select().single();
+    };
+    const q = isEdit
+      ? supabase.from("maintenance").update(payload).eq("id", initial.id).select().single()
+      : supabase.from("maintenance").insert(payload).select().single();
+    const { data, error } = await q;
     setSaving(false);
     if (error) return toast.error(error.message);
     qc.setQueriesData({ queryKey: ["maintenance"] }, (old: any[] | undefined) => {
-      const list = Array.isArray(old) ? [...old, data] : [data];
+      const base = Array.isArray(old) ? old : [];
+      const list = isEdit ? base.map((it) => (it.id === data.id ? data : it)) : [...base, data];
       return list.sort((a, b) => String(a.next_due_date).localeCompare(String(b.next_due_date)));
     });
-    toast.success("Tarefa de manutenção adicionada");
+    toast.success(isEdit ? "Tarefa atualizada" : "Tarefa de manutenção adicionada");
     onDone();
   }
 
@@ -73,7 +79,7 @@ export function MaintenanceForm({ onDone }: { onDone: () => void }) {
         </Select>
       </Field>
       <Button type="submit" className="w-full h-11" disabled={saving}>
-        {saving ? "Salvando…" : "Adicionar tarefa"}
+        {saving ? "Salvando…" : isEdit ? "Salvar alterações" : "Adicionar tarefa"}
       </Button>
     </form>
   );

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTable } from "@/hooks/useTable";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,10 +7,12 @@ import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AddItemButton } from "@/components/AddItemButton";
 import { FinanceForm } from "@/components/forms/FinanceForm";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function Finance() {
   const { data = [], isLoading } = useTable<any>("finances", { column: "due_date" });
   const qc = useQueryClient();
+  const [editing, setEditing] = useState<any | null>(null);
 
   const pending = data.filter((f) => f.status === "pending");
   const paid = data.filter((f) => f.status === "paid");
@@ -69,9 +72,16 @@ export default function Finance() {
       ) : (
         <div className="space-y-2">
           {data.map((f) => (
-            <div key={f.id} className="bg-card border border-border/60 rounded-2xl p-4 shadow-card flex items-center gap-3">
+            <div
+              key={f.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => setEditing(f)}
+              onKeyDown={(e) => { if (e.key === "Enter") setEditing(f); }}
+              className="bg-card border border-border/60 rounded-2xl p-4 shadow-card flex items-center gap-3 cursor-pointer active:scale-[0.997] transition-transform"
+            >
               <button
-                onClick={() => toggle(f)}
+                onClick={(e) => { e.stopPropagation(); toggle(f); }}
                 className={`h-10 w-10 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${
                   f.status === "paid" ? "bg-success/15 text-success" : "bg-destructive/10 text-destructive"
                 }`}
@@ -84,7 +94,7 @@ export default function Finance() {
               </div>
               <div className="text-right">
                 <p className="font-bold tabular-nums">{formatCurrency(Number(f.amount))}</p>
-                <button onClick={() => remove(f.id)} className="text-muted-foreground hover:text-destructive mt-1">
+                <button onClick={(e) => { e.stopPropagation(); remove(f.id); }} className="text-muted-foreground hover:text-destructive mt-1">
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -92,6 +102,16 @@ export default function Finance() {
           ))}
         </div>
       )}
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="max-w-md rounded-3xl bg-card border-border/60">
+          <DialogHeader>
+            <DialogTitle>Editar despesa</DialogTitle>
+          </DialogHeader>
+          <div className="mt-2">
+            {editing && <FinanceForm initial={editing} onDone={() => setEditing(null)} />}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

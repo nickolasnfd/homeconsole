@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTable } from "@/hooks/useTable";
 import { addDaysISO, daysUntil, formatDate, todayISO } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,10 +7,12 @@ import { CheckCircle2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AddItemButton } from "@/components/AddItemButton";
 import { MaintenanceForm } from "@/components/forms/MaintenanceForm";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function Maintenance() {
   const { data = [], isLoading } = useTable<any>("maintenance", { column: "next_due_date" });
   const qc = useQueryClient();
+  const [editing, setEditing] = useState<any | null>(null);
 
   async function complete(m: any) {
     const today = todayISO();
@@ -65,7 +68,14 @@ export default function Maintenance() {
           "bg-success/10 text-success";
         const label = overdue ? `${Math.abs(days)}d atrasada` : days === 0 ? "Vence hoje" : `Em ${days}d`;
         return (
-          <div key={m.id} className="bg-card border border-border/60 rounded-2xl p-4 shadow-card">
+          <div
+            key={m.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => setEditing(m)}
+            onKeyDown={(e) => { if (e.key === "Enter") setEditing(m); }}
+            className="bg-card border border-border/60 rounded-2xl p-4 shadow-card cursor-pointer active:scale-[0.997] transition-transform"
+          >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="font-semibold">{m.title}</p>
@@ -78,10 +88,10 @@ export default function Maintenance() {
                 <p className="text-[11px] text-muted-foreground mt-1">Próxima: {formatDate(m.next_due_date)}</p>
               </div>
               <div className="flex flex-col gap-2">
-                <button onClick={() => complete(m)} className="h-9 w-9 rounded-xl bg-success text-success-foreground active:scale-95 flex items-center justify-center" aria-label="Concluir">
+                <button onClick={(e) => { e.stopPropagation(); complete(m); }} className="h-9 w-9 rounded-xl bg-success text-success-foreground active:scale-95 flex items-center justify-center" aria-label="Concluir">
                   <CheckCircle2 className="h-4 w-4" />
                 </button>
-                <button onClick={() => remove(m.id)} className="h-9 w-9 rounded-xl bg-muted text-muted-foreground active:scale-95 flex items-center justify-center" aria-label="Excluir">
+                <button onClick={(e) => { e.stopPropagation(); remove(m.id); }} className="h-9 w-9 rounded-xl bg-muted text-muted-foreground active:scale-95 flex items-center justify-center" aria-label="Excluir">
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
@@ -89,6 +99,16 @@ export default function Maintenance() {
           </div>
         );
       })}
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="max-w-md rounded-3xl bg-card border-border/60">
+          <DialogHeader>
+            <DialogTitle>Editar manutenção</DialogTitle>
+          </DialogHeader>
+          <div className="mt-2">
+            {editing && <MaintenanceForm initial={editing} onDone={() => setEditing(null)} />}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

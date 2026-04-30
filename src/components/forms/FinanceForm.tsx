@@ -10,14 +10,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { todayISO } from "@/lib/format";
 import { toast } from "sonner";
 
-export function FinanceForm({ onDone }: { onDone: () => void }) {
+export function FinanceForm({ onDone, initial }: { onDone: () => void; initial?: any }) {
   const qc = useQueryClient();
+  const isEdit = !!initial?.id;
   const [form, setForm] = useState({
-    description: "",
-    amount: "",
-    due_date: todayISO(),
-    status: "pending",
-    category: "Contas",
+    description: initial?.description ?? "",
+    amount: initial?.amount != null ? String(initial.amount) : "",
+    due_date: initial?.due_date ?? todayISO(),
+    status: initial?.status ?? "pending",
+    category: initial?.category ?? "Contas",
   });
   const [saving, setSaving] = useState(false);
 
@@ -25,20 +26,25 @@ export function FinanceForm({ onDone }: { onDone: () => void }) {
     e.preventDefault();
     if (!form.description.trim()) return toast.error("A descrição é obrigatória");
     setSaving(true);
-    const { data, error } = await supabase.from("finances").insert({
+    const payload = {
       description: form.description.trim(),
       amount: Number(form.amount) || 0,
       due_date: form.due_date || todayISO(),
       status: form.status,
       category: form.category.trim() || "geral",
-    }).select().single();
+    };
+    const q = isEdit
+      ? supabase.from("finances").update(payload).eq("id", initial.id).select().single()
+      : supabase.from("finances").insert(payload).select().single();
+    const { data, error } = await q;
     setSaving(false);
     if (error) return toast.error(error.message);
     qc.setQueriesData({ queryKey: ["finances"] }, (old: any[] | undefined) => {
-      const list = Array.isArray(old) ? [...old, data] : [data];
+      const base = Array.isArray(old) ? old : [];
+      const list = isEdit ? base.map((it) => (it.id === data.id ? data : it)) : [...base, data];
       return list.sort((a, b) => String(a.due_date).localeCompare(String(b.due_date)));
     });
-    toast.success("Despesa adicionada");
+    toast.success(isEdit ? "Despesa atualizada" : "Despesa adicionada");
     onDone();
   }
 
@@ -70,7 +76,7 @@ export function FinanceForm({ onDone }: { onDone: () => void }) {
         </Field>
       </div>
       <Button type="submit" className="w-full h-11" disabled={saving}>
-        {saving ? "Salvando…" : "Adicionar despesa"}
+        {saving ? "Salvando…" : isEdit ? "Salvar alterações" : "Adicionar despesa"}
       </Button>
     </form>
   );
