@@ -27,7 +27,7 @@ export function Fab() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <button
-          aria-label="Add new record"
+          aria-label="Adicionar novo registro"
           className="fixed z-50 bottom-28 right-5 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-fab flex items-center justify-center active:scale-95 transition-transform"
         >
           <Plus className="h-6 w-6" strokeWidth={2.6} />
@@ -35,12 +35,12 @@ export function Fab() {
       </DialogTrigger>
       <DialogContent className="max-w-md rounded-3xl">
         <DialogHeader>
-          <DialogTitle>Quick add</DialogTitle>
+          <DialogTitle>Adicionar rápido</DialogTitle>
         </DialogHeader>
         <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList className="grid grid-cols-3 w-full">
-            <TabsTrigger value="finance">Expense</TabsTrigger>
-            <TabsTrigger value="maintenance">Task</TabsTrigger>
+            <TabsTrigger value="finance">Despesa</TabsTrigger>
+            <TabsTrigger value="maintenance">Tarefa</TabsTrigger>
             <TabsTrigger value="inventory">Item</TabsTrigger>
           </TabsList>
           <TabsContent value="finance" className="mt-4"><FinanceForm onDone={close} /></TabsContent>

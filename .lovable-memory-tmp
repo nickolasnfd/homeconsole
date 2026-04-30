@@ -1,0 +1,8 @@
+# Project Memory
+
+## Core
+Idioma da interface: português do Brasil (pt-BR) em todos os textos visíveis ao usuário, toasts, labels, placeholders e meta tags.
+Formatação: moeda em BRL (R$) e datas no formato pt-BR.
+Tema visual: Deep Slate (#1e293b), cinza suave e branco; verde para sucesso, vermelho para crítico.
+
+## Memories

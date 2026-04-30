@@ -22,12 +22,12 @@ export default function Dashboard() {
     const now = new Date();
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = d.toLocaleDateString("en-US", { month: "short" });
+      const key = d.toLocaleDateString("pt-BR", { month: "short" });
       map.set(key, 0);
     }
     (finances.data ?? []).forEach((f) => {
       const d = new Date(f.due_date);
-      const key = d.toLocaleDateString("en-US", { month: "short" });
+      const key = d.toLocaleDateString("pt-BR", { month: "short" });
       if (map.has(key)) map.set(key, (map.get(key) || 0) + Number(f.amount || 0));
     });
     return Array.from(map, ([month, total]) => ({ month, total }));
@@ -39,30 +39,30 @@ export default function Dashboard() {
         <SummaryCard
           to="/maintenance"
           icon={<Wrench className="h-5 w-5" />}
-          label="Critical Maintenance"
+          label="Manutenções críticas"
           value={criticalMaint.length}
-          hint={criticalMaint.length ? `${criticalMaint[0].title} • due ${formatDate(criticalMaint[0].next_due_date)}` : "All caught up"}
+          hint={criticalMaint.length ? `${criticalMaint[0].title} • vence ${formatDate(criticalMaint[0].next_due_date)}` : "Tudo em dia"}
           tone={criticalMaint.length ? "danger" : "success"}
         />
         <SummaryCard
           to="/inventory"
           icon={<Package className="h-5 w-5" />}
-          label="Low Stock Alerts"
+          label="Alertas de estoque baixo"
           value={lowStock.length}
-          hint={lowStock.length ? `${lowStock[0].name} below threshold` : "Stock is healthy"}
+          hint={lowStock.length ? `${lowStock[0].name} abaixo do mínimo` : "Estoque saudável"}
           tone={lowStock.length ? "warning" : "success"}
         />
         <SummaryCard
           to="/finance"
           icon={<Wallet className="h-5 w-5" />}
-          label="Pending Bills"
+          label="Contas pendentes"
           value={pendingBills.length}
-          hint={pendingBills.length ? `${formatCurrency(pendingTotal)} outstanding` : "Nothing due"}
+          hint={pendingBills.length ? `${formatCurrency(pendingTotal)} em aberto` : "Nada a pagar"}
           tone={pendingBills.length ? "danger" : "success"}
         />
       </div>
 
-      <Section title="Monthly expenses" subtitle="Last 6 months">
+      <Section title="Despesas mensais" subtitle="Últimos 6 meses">
         <div className="h-44 -mx-2">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={monthly} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -84,18 +84,18 @@ export default function Dashboard() {
         </div>
       </Section>
 
-      <Section title="Inventory levels" subtitle="Top 5 items">
+      <Section title="Níveis de estoque" subtitle="Top 5 itens">
         <InventoryMiniChart data={(inventory.data ?? []).slice(0, 5)} />
       </Section>
 
       {criticalMaint.length > 0 && (
-        <Section title="Upcoming tasks" subtitle="Next 7 days">
+        <Section title="Tarefas próximas" subtitle="Próximos 7 dias">
           <div className="space-y-2">
             {criticalMaint.slice(0, 3).map((m) => (
               <div key={m.id} className="flex items-center justify-between bg-card rounded-2xl p-3 shadow-card">
                 <div>
                   <p className="font-semibold text-sm">{m.title}</p>
-                  <p className="text-xs text-muted-foreground">Due {formatDate(m.next_due_date)}</p>
+                  <p className="text-xs text-muted-foreground">Vence {formatDate(m.next_due_date)}</p>
                 </div>
                 <AlertTriangle className="h-4 w-4 text-destructive" />
               </div>
@@ -142,7 +142,7 @@ function Section({ title, subtitle, children }: { title: string; subtitle?: stri
 }
 
 function InventoryMiniChart({ data }: { data: any[] }) {
-  if (!data.length) return <p className="text-xs text-muted-foreground py-4 text-center">No items yet.</p>;
+  if (!data.length) return <p className="text-xs text-muted-foreground py-4 text-center">Nenhum item ainda.</p>;
   return (
     <div className="space-y-2.5">
       {data.map((i) => {

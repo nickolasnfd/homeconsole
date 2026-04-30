@@ -33,21 +33,21 @@ export default function Finance() {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-card rounded-2xl p-4 shadow-card">
-          <p className="text-xs text-muted-foreground font-medium">Pending</p>
+          <p className="text-xs text-muted-foreground font-medium">Pendente</p>
           <p className="text-xl font-bold text-destructive mt-1">{formatCurrency(pendingTotal)}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">{pending.length} bills</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">{pending.length} contas</p>
         </div>
         <div className="bg-card rounded-2xl p-4 shadow-card">
-          <p className="text-xs text-muted-foreground font-medium">Paid</p>
+          <p className="text-xs text-muted-foreground font-medium">Pago</p>
           <p className="text-xl font-bold text-success mt-1">{formatCurrency(paidTotal)}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">{paid.length} bills</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">{paid.length} contas</p>
         </div>
       </div>
 
       {!data.length ? (
         <div className="text-center py-16">
-          <p className="font-semibold">No expenses yet</p>
-          <p className="text-sm text-muted-foreground mt-1">Tap + to log a bill or expense.</p>
+          <p className="font-semibold">Nenhuma despesa ainda</p>
+          <p className="text-sm text-muted-foreground mt-1">Toque em + para registrar uma conta ou despesa.</p>
         </div>
       ) : (
         <div className="space-y-2">

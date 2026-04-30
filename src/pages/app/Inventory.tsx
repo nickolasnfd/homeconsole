@@ -19,12 +19,12 @@ export default function Inventory() {
   async function remove(id: string) {
     const { error } = await supabase.from("inventory").delete().eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Item removed");
+    toast.success("Item removido");
     qc.invalidateQueries({ queryKey: ["inventory"] });
   }
 
   if (isLoading) return <Skeleton />;
-  if (!data.length) return <Empty title="No items yet" body="Tap + to add your first inventory item." />;
+  if (!data.length) return <Empty title="Nenhum item ainda" body="Toque em + para adicionar seu primeiro item ao estoque." />;
 
   return (
     <div className="space-y-3">
@@ -39,7 +39,7 @@ export default function Inventory() {
                   {low && <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />}
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {i.category}{i.expires_at ? ` • exp ${formatDate(i.expires_at)}` : ""}
+                  {i.category}{i.expires_at ? ` • val ${formatDate(i.expires_at)}` : ""}
                 </p>
               </div>
               <button onClick={() => remove(i.id)} className="text-muted-foreground hover:text-destructive p-1">
@@ -48,7 +48,7 @@ export default function Inventory() {
             </div>
             <div className="flex items-center justify-between mt-3">
               <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${low ? "bg-destructive/10 text-destructive" : "bg-success/10 text-success"}`}>
-                {low ? "Low stock" : "Healthy"} • min {i.min_threshold}
+                {low ? "Estoque baixo" : "Saudável"} • mín {i.min_threshold}
               </span>
               <div className="flex items-center gap-2">
                 <button onClick={() => adjust(i.id, i.current_qty, -1)} className="h-8 w-8 rounded-lg bg-muted active:scale-95 flex items-center justify-center">
