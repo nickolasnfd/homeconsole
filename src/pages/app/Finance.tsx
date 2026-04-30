@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { AddItemButton } from "@/components/AddItemButton";
+import { FinanceForm } from "@/components/forms/FinanceForm";
 
 export default function Finance() {
   const { data = [], isLoading } = useTable<any>("finances", { column: "due_date" });
@@ -31,6 +33,10 @@ export default function Finance() {
 
   return (
     <div className="space-y-4">
+      <AddItemButton title="Nova despesa" label="Adicionar despesa">
+        {(close) => <FinanceForm onDone={close} />}
+      </AddItemButton>
+
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-card border border-border/60 rounded-2xl p-4 shadow-card">
           <p className="text-xs text-muted-foreground font-medium">Pendente</p>

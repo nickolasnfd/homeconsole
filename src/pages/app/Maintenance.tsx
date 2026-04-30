@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { AddItemButton } from "@/components/AddItemButton";
+import { MaintenanceForm } from "@/components/forms/MaintenanceForm";
 
 export default function Maintenance() {
   const { data = [], isLoading } = useTable<any>("maintenance", { column: "next_due_date" });
@@ -25,11 +27,23 @@ export default function Maintenance() {
     qc.invalidateQueries({ queryKey: ["maintenance"] });
   }
 
-  if (isLoading) return <div className="space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-24 bg-card rounded-2xl shadow-card animate-pulse" />)}</div>;
-  if (!data.length) return <div className="text-center py-16"><p className="font-semibold">Nenhuma tarefa ainda</p><p className="text-sm text-muted-foreground mt-1">Toque em + para programar manutenções recorrentes.</p></div>;
+  const addButton = (
+    <AddItemButton title="Nova tarefa de manutenção" label="Adicionar tarefa">
+      {(close) => <MaintenanceForm onDone={close} />}
+    </AddItemButton>
+  );
+
+  if (isLoading) return <div className="space-y-3">{addButton}{[...Array(3)].map((_, i) => <div key={i} className="h-24 bg-card rounded-2xl shadow-card animate-pulse" />)}</div>;
+  if (!data.length) return (
+    <div className="space-y-4">
+      {addButton}
+      <div className="text-center py-12"><p className="font-semibold">Nenhuma tarefa ainda</p><p className="text-sm text-muted-foreground mt-1">Toque em adicionar para programar manutenções recorrentes.</p></div>
+    </div>
+  );
 
   return (
     <div className="space-y-3">
+      {addButton}
       {data.map((m) => {
         const days = daysUntil(m.next_due_date);
         const overdue = days < 0;
