@@ -6,15 +6,16 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export function InventoryForm({ onDone }: { onDone: () => void }) {
+export function InventoryForm({ onDone, initial }: { onDone: () => void; initial?: any }) {
   const qc = useQueryClient();
+  const isEdit = !!initial?.id;
   const [form, setForm] = useState({
-    name: "",
-    category: "geral",
-    current_qty: "1",
-    min_threshold: "1",
-    unit: "un",
-    expires_at: "",
+    name: initial?.name ?? "",
+    category: initial?.category ?? "geral",
+    current_qty: initial?.current_qty != null ? String(initial.current_qty) : "1",
+    min_threshold: initial?.min_threshold != null ? String(initial.min_threshold) : "1",
+    unit: initial?.unit ?? "un",
+    expires_at: initial?.expires_at ?? "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -22,22 +23,27 @@ export function InventoryForm({ onDone }: { onDone: () => void }) {
     e.preventDefault();
     if (!form.name.trim()) return toast.error("O nome é obrigatório");
     setSaving(true);
-    const { data, error } = await supabase.from("inventory").insert({
+    const payload = {
       name: form.name.trim(),
       category: form.category.trim() || "geral",
       current_qty: Number(form.current_qty) || 0,
       min_threshold: Number(form.min_threshold) || 0,
       unit: form.unit.trim() || "un",
       expires_at: form.expires_at || null,
-    }).select().single();
+    };
+    const { data, error } = isEdit
+      ? await supabase.from("inventory").update(payload).eq("id", initial.id).select().single()
+      : await supabase.from("inventory").insert(payload).select().single();
     setSaving(false);
     if (error) return toast.error(error.message);
-    // Atualização otimista do cache: já injeta o item sem esperar refetch.
     qc.setQueriesData({ queryKey: ["inventory"] }, (old: any[] | undefined) => {
-      const list = Array.isArray(old) ? [...old, data] : [data];
-      return list.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+      const list = Array.isArray(old) ? [...old] : [];
+      const next = isEdit
+        ? list.map((it) => (it.id === data.id ? { ...it, ...data } : it))
+        : [...list, data];
+      return next.sort((a, b) => String(a.name).localeCompare(String(b.name)));
     });
-    toast.success("Item adicionado");
+    toast.success(isEdit ? "Item atualizado" : "Item adicionado");
     onDone();
   }
 
@@ -66,7 +72,7 @@ export function InventoryForm({ onDone }: { onDone: () => void }) {
         <Input type="date" value={form.expires_at} onChange={(e) => setForm({ ...form, expires_at: e.target.value })} />
       </Field>
       <Button type="submit" className="w-full h-11" disabled={saving}>
-        {saving ? "Salvando…" : "Adicionar ao estoque"}
+        {saving ? "Salvando…" : isEdit ? "Salvar alterações" : "Adicionar ao estoque"}
       </Button>
     </form>
   );

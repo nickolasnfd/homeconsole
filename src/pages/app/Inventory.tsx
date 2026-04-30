@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTable } from "@/hooks/useTable";
 import { formatDate } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,10 +7,12 @@ import { Trash2, Plus, Minus, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { AddItemButton } from "@/components/AddItemButton";
 import { InventoryForm } from "@/components/forms/InventoryForm";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function Inventory() {
   const { data = [], isLoading } = useTable<any>("inventory", { column: "name" });
   const qc = useQueryClient();
+  const [editing, setEditing] = useState<any | null>(null);
 
   async function adjust(id: string, current: number, delta: number) {
     const next = Math.max(0, Number(current) + delta);
@@ -56,7 +59,14 @@ export default function Inventory() {
       {data.map((i) => {
         const low = Number(i.current_qty) < Number(i.min_threshold);
         return (
-          <div key={i.id} className="bg-card border border-border/60 rounded-2xl p-4 shadow-card">
+          <div
+            key={i.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => setEditing(i)}
+            onKeyDown={(e) => { if (e.key === "Enter") setEditing(i); }}
+            className="bg-card border border-border/60 rounded-2xl p-4 shadow-card cursor-pointer active:scale-[0.997] transition-transform"
+          >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
@@ -67,7 +77,7 @@ export default function Inventory() {
                   {i.category}{i.expires_at ? ` • val ${formatDate(i.expires_at)}` : ""}
                 </p>
               </div>
-              <button onClick={() => remove(i.id)} className="text-muted-foreground hover:text-destructive p-1">
+              <button onClick={(e) => { e.stopPropagation(); remove(i.id); }} className="text-muted-foreground hover:text-destructive p-1">
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>
@@ -76,11 +86,11 @@ export default function Inventory() {
                 {low ? "Estoque baixo" : "Saudável"} • mín {i.min_threshold}
               </span>
               <div className="flex items-center gap-2">
-                <button onClick={() => adjust(i.id, i.current_qty, -1)} className="h-8 w-8 rounded-lg bg-muted active:scale-95 flex items-center justify-center">
+                <button onClick={(e) => { e.stopPropagation(); adjust(i.id, i.current_qty, -1); }} className="h-8 w-8 rounded-lg bg-muted active:scale-95 flex items-center justify-center">
                   <Minus className="h-4 w-4" />
                 </button>
                 <span className="font-bold tabular-nums w-16 text-center">{i.current_qty} <span className="text-xs font-normal text-muted-foreground">{i.unit}</span></span>
-                <button onClick={() => adjust(i.id, i.current_qty, 1)} className="h-8 w-8 rounded-lg bg-primary text-primary-foreground active:scale-95 flex items-center justify-center">
+                <button onClick={(e) => { e.stopPropagation(); adjust(i.id, i.current_qty, 1); }} className="h-8 w-8 rounded-lg bg-primary text-primary-foreground active:scale-95 flex items-center justify-center">
                   <Plus className="h-4 w-4" />
                 </button>
               </div>
@@ -88,6 +98,18 @@ export default function Inventory() {
           </div>
         );
       })}
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="max-w-md rounded-3xl bg-card border-border/60">
+          <DialogHeader>
+            <DialogTitle>Editar item</DialogTitle>
+          </DialogHeader>
+          <div className="mt-2">
+            {editing && (
+              <InventoryForm initial={editing} onDone={() => setEditing(null)} />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
