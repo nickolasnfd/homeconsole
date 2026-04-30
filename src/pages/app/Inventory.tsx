@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Trash2, Plus, Minus, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { AddItemButton } from "@/components/AddItemButton";
+import { InventoryForm } from "@/components/forms/InventoryForm";
 
 export default function Inventory() {
   const { data = [], isLoading } = useTable<any>("inventory", { column: "name" });
@@ -23,11 +25,23 @@ export default function Inventory() {
     qc.invalidateQueries({ queryKey: ["inventory"] });
   }
 
-  if (isLoading) return <Skeleton />;
-  if (!data.length) return <Empty title="Nenhum item ainda" body="Toque em + para adicionar seu primeiro item ao estoque." />;
+  const addButton = (
+    <AddItemButton title="Novo item de estoque" label="Adicionar item">
+      {(close) => <InventoryForm onDone={close} />}
+    </AddItemButton>
+  );
+
+  if (isLoading) return <div className="space-y-3">{addButton}<Skeleton /></div>;
+  if (!data.length) return (
+    <div className="space-y-4">
+      {addButton}
+      <Empty title="Nenhum item ainda" body="Toque em adicionar para criar seu primeiro item." />
+    </div>
+  );
 
   return (
     <div className="space-y-3">
+      {addButton}
       {data.map((i) => {
         const low = Number(i.current_qty) < Number(i.min_threshold);
         return (
