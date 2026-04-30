@@ -4,17 +4,17 @@ import { LayoutDashboard, Package, Wrench, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/inventory", label: "Inventory", icon: Package },
-  { to: "/maintenance", label: "Maintenance", icon: Wrench },
-  { to: "/finance", label: "Finance", icon: Wallet },
+  { to: "/", label: "Painel", icon: LayoutDashboard, end: true },
+  { to: "/inventory", label: "Estoque", icon: Package },
+  { to: "/maintenance", label: "Manutenção", icon: Wrench },
+  { to: "/finance", label: "Finanças", icon: Wallet },
 ];
 
 const titles: Record<string, { title: string; subtitle: string }> = {
-  "/": { title: "Command Center", subtitle: "Your home at a glance" },
-  "/inventory": { title: "Inventory", subtitle: "Track stock & supplies" },
-  "/maintenance": { title: "Maintenance", subtitle: "Stay ahead of upkeep" },
-  "/finance": { title: "Finance", subtitle: "Bills & expenses" },
+  "/": { title: "Central de Comando", subtitle: "Sua casa em um relance" },
+  "/inventory": { title: "Estoque", subtitle: "Acompanhe itens e suprimentos" },
+  "/maintenance": { title: "Manutenção", subtitle: "Antecipe os cuidados da casa" },
+  "/finance": { title: "Finanças", subtitle: "Contas e despesas" },
 };
 
 export function AppShell({ children }: { children: ReactNode }) {
