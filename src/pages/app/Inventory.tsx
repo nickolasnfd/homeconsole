@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { AddItemButton } from "@/components/AddItemButton";
 import { InventoryForm } from "@/components/forms/InventoryForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 export default function Inventory() {
   const { data = [], isLoading } = useTable<any>("inventory", { column: "name" });
@@ -59,8 +60,22 @@ export default function Inventory() {
   return (
     <div className="space-y-3">
       {addButton}
+      {shoppingList.length > 0 && (
+        <Alert variant="destructive" className="rounded-2xl border-destructive/40 bg-destructive/10">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>
+            {shoppingList.length === 1
+              ? "1 item abaixo do mínimo"
+              : `${shoppingList.length} itens abaixo do mínimo`}
+          </AlertTitle>
+          <AlertDescription>
+            Veja a lista de compras abaixo com a quantidade exata a comprar.
+          </AlertDescription>
+        </Alert>
+      )}
       {data.map((i) => {
         const low = Number(i.current_qty) < Number(i.min_threshold);
+        const need = low ? Math.max(0, Number(i.min_threshold) - Number(i.current_qty)) : 0;
         return (
           <div
             key={i.id}
@@ -68,7 +83,7 @@ export default function Inventory() {
             tabIndex={0}
             onClick={() => setEditing(i)}
             onKeyDown={(e) => { if (e.key === "Enter") setEditing(i); }}
-            className="bg-card border border-border/60 rounded-2xl p-4 shadow-card cursor-pointer active:scale-[0.997] transition-transform"
+            className={`bg-card border rounded-2xl p-4 shadow-card cursor-pointer active:scale-[0.997] transition-transform ${low ? "border-destructive/50" : "border-border/60"}`}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
@@ -86,7 +101,7 @@ export default function Inventory() {
             </div>
             <div className="flex items-center justify-between mt-3">
               <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${low ? "bg-destructive/10 text-destructive" : "bg-success/10 text-success"}`}>
-                {low ? "Estoque baixo" : "Saudável"} • mín {i.min_threshold}
+                {low ? `Faltam ${need} ${i.unit}` : "Saudável"} • mín {i.min_threshold}
               </span>
               <div className="flex items-center gap-2">
                 <button onClick={(e) => { e.stopPropagation(); adjust(i.id, i.current_qty, -1); }} className="h-8 w-8 rounded-lg bg-muted active:scale-95 flex items-center justify-center">
