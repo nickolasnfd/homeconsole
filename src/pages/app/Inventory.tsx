@@ -1,22 +1,52 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTable } from "@/hooks/useTable";
 import { formatDate } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { Trash2, Plus, Minus, AlertTriangle } from "lucide-react";
-import { ShoppingCart } from "lucide-react";
+import { Trash2, Plus, Minus, AlertTriangle, ShoppingCart, CalendarClock, Search } from "lucide-react";
 import { toast } from "sonner";
 import { AddItemButton } from "@/components/AddItemButton";
 import { InventoryForm } from "@/components/forms/InventoryForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+
+type Filter = "all" | "low" | "expiring";
+
+function daysUntil(dateStr?: string | null) {
+  if (!dateStr) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(dateStr + "T00:00:00");
+  return Math.round((d.getTime() - today.getTime()) / 86400000);
+}
 
 export default function Inventory() {
   const { data = [], isLoading } = useTable<any>("inventory", { column: "name" });
   const qc = useQueryClient();
   const [editing, setEditing] = useState<any | null>(null);
+  const [filter, setFilter] = useState<Filter>("all");
+  const [query, setQuery] = useState("");
+  const [cartOpen, setCartOpen] = useState(false);
 
   const shoppingList = data.filter((i: any) => Number(i.current_qty) < Number(i.min_threshold));
+  const expiringList = data.filter((i: any) => {
+    const d = daysUntil(i.expires_at);
+    return d !== null && d <= 7;
+  });
+
+  const filtered = useMemo(() => {
+    let list = data as any[];
+    if (filter === "low") list = shoppingList;
+    else if (filter === "expiring") list = expiringList;
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      list = list.filter((i) => i.name.toLowerCase().includes(q) || (i.category ?? "").toLowerCase().includes(q));
+    }
+    return list;
+  }, [data, filter, query, shoppingList, expiringList]);
 
   async function adjust(id: string, current: number, delta: number) {
     const next = Math.max(0, Number(current) + delta);
@@ -30,17 +60,33 @@ export default function Inventory() {
     }
   }
 
-  async function remove(id: string) {
+  async function remove(item: any) {
     const prev = qc.getQueryData<any[]>(["inventory"]);
     qc.setQueriesData({ queryKey: ["inventory"] }, (old: any[] | undefined) =>
-      (old ?? []).filter((it) => it.id !== id)
+      (old ?? []).filter((it) => it.id !== item.id)
     );
-    const { error } = await supabase.from("inventory").delete().eq("id", id);
-    if (error) {
-      qc.setQueryData(["inventory"], prev);
-      return toast.error(error.message);
-    }
-    toast.success("Item removido");
+    let undone = false;
+    toast(`"${item.name}" removido`, {
+      action: {
+        label: "Desfazer",
+        onClick: () => {
+          undone = true;
+          qc.setQueriesData({ queryKey: ["inventory"] }, (old: any[] | undefined) => {
+            const list = Array.isArray(old) ? [...old, item] : [item];
+            return list.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+          });
+        },
+      },
+      duration: 5000,
+    });
+    setTimeout(async () => {
+      if (undone) return;
+      const { error } = await supabase.from("inventory").delete().eq("id", item.id);
+      if (error) {
+        qc.setQueryData(["inventory"], prev);
+        toast.error(error.message);
+      }
+    }, 5200);
   }
 
   const addButton = (
@@ -58,24 +104,42 @@ export default function Inventory() {
   );
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 pb-24">
       {addButton}
-      {shoppingList.length > 0 && (
-        <Alert variant="destructive" className="rounded-2xl border-destructive/40 bg-destructive/10">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>
-            {shoppingList.length === 1
-              ? "1 item abaixo do mínimo"
-              : `${shoppingList.length} itens abaixo do mínimo`}
-          </AlertTitle>
-          <AlertDescription>
-            Veja a lista de compras abaixo com a quantidade exata a comprar.
-          </AlertDescription>
-        </Alert>
+
+      <div className="relative">
+        <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar item ou categoria"
+          className="pl-9 h-10 rounded-xl"
+        />
+      </div>
+
+      <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
+        <TabsList className="grid grid-cols-3 w-full rounded-xl">
+          <TabsTrigger value="all" className="rounded-lg">Todos <span className="ml-1 text-[10px] text-muted-foreground">{data.length}</span></TabsTrigger>
+          <TabsTrigger value="low" className="rounded-lg">Faltando <span className="ml-1 text-[10px] text-destructive">{shoppingList.length}</span></TabsTrigger>
+          <TabsTrigger value="expiring" className="rounded-lg">Vencendo <span className="ml-1 text-[10px] text-warning">{expiringList.length}</span></TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {filtered.length === 0 && (
+        <div className="bg-card border border-border/60 rounded-2xl p-6 text-center">
+          <p className="text-sm text-muted-foreground">Nenhum item nesta visão.</p>
+        </div>
       )}
-      {data.map((i) => {
+
+      {filtered.map((i) => {
         const low = Number(i.current_qty) < Number(i.min_threshold);
         const need = low ? Math.max(0, Number(i.min_threshold) - Number(i.current_qty)) : 0;
+        const min = Number(i.min_threshold) || 0;
+        const cur = Number(i.current_qty) || 0;
+        const pct = min > 0 ? Math.min(100, Math.round((cur / min) * 100)) : 100;
+        const exp = daysUntil(i.expires_at);
+        const expired = exp !== null && exp < 0;
+        const expiringSoon = exp !== null && exp >= 0 && exp <= 7;
         return (
           <div
             key={i.id}
@@ -91,18 +155,36 @@ export default function Inventory() {
                   <p className="font-semibold truncate">{i.name}</p>
                   {low && <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />}
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {i.category}{i.expires_at ? ` • val ${formatDate(i.expires_at)}` : ""}
-                </p>
+                <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                  <span className="text-[11px] text-muted-foreground">{i.category}</span>
+                  {i.expires_at && (
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full inline-flex items-center gap-1 ${
+                      expired ? "bg-destructive/15 text-destructive"
+                      : expiringSoon ? "bg-warning/15 text-warning"
+                      : "bg-muted text-muted-foreground"
+                    }`}>
+                      <CalendarClock className="h-3 w-3" />
+                      {expired ? "Vencido" : expiringSoon ? `${exp}d` : formatDate(i.expires_at)}
+                    </span>
+                  )}
+                </div>
               </div>
-              <button onClick={(e) => { e.stopPropagation(); remove(i.id); }} className="text-muted-foreground hover:text-destructive p-1">
+              <button onClick={(e) => { e.stopPropagation(); remove(i); }} className="text-muted-foreground hover:text-destructive p-1">
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>
+
+            <div className="mt-3">
+              <Progress value={pct} className={`h-1.5 ${low ? "[&>div]:bg-destructive" : "[&>div]:bg-success"}`} />
+              <div className="flex items-center justify-between mt-1">
+                <span className={`text-[11px] font-medium ${low ? "text-destructive" : "text-muted-foreground"}`}>
+                  {low ? `Faltam ${need} ${i.unit}` : "Estoque saudável"} · mín {i.min_threshold}
+                </span>
+              </div>
+            </div>
+
             <div className="flex items-center justify-between mt-3">
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${low ? "bg-destructive/10 text-destructive" : "bg-success/10 text-success"}`}>
-                {low ? `Faltam ${need} ${i.unit}` : "Saudável"} • mín {i.min_threshold}
-              </span>
+              <span className="text-xs text-muted-foreground">Ajustar quantidade</span>
               <div className="flex items-center gap-2">
                 <button onClick={(e) => { e.stopPropagation(); adjust(i.id, i.current_qty, -1); }} className="h-8 w-8 rounded-lg bg-muted active:scale-95 flex items-center justify-center">
                   <Minus className="h-4 w-4" />
@@ -116,43 +198,57 @@ export default function Inventory() {
           </div>
         );
       })}
-      <div className="pt-2">
-        <div className="flex items-center gap-2 mb-2 px-1">
-          <ShoppingCart className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-semibold">Lista de compras</h2>
-        </div>
-        {shoppingList.length === 0 ? (
-          <div className="bg-card border border-border/60 rounded-2xl p-4 shadow-card text-center">
-            <p className="text-sm text-muted-foreground">
-              Nenhum item abaixo do mínimo. Tudo em ordem!
-            </p>
-          </div>
-        ) : (
-          <div className="bg-card border border-border/60 rounded-2xl p-4 shadow-card">
-            <p className="text-xs text-muted-foreground mb-3">
-              {shoppingList.length} {shoppingList.length === 1 ? "item precisa ser comprado" : "itens precisam ser comprados"}
-            </p>
-            <ul className="space-y-1.5">
-              {shoppingList.map((i: any) => {
-                const need = Math.max(0, Number(i.min_threshold) - Number(i.current_qty));
-                return (
-                  <li key={i.id} className="flex items-center justify-between text-sm py-2 px-3 rounded-lg bg-muted/40">
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{i.name}</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        atual {i.current_qty} {i.unit} • mín {i.min_threshold}
-                      </p>
-                    </div>
-                    <span className="text-xs font-semibold text-primary tabular-nums shrink-0 ml-2">
-                      comprar {need} {i.unit}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+
+      {/* FAB carrinho */}
+      <button
+        onClick={() => setCartOpen(true)}
+        aria-label="Abrir lista de compras"
+        className="fixed bottom-24 right-4 z-40 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95 flex items-center justify-center"
+      >
+        <ShoppingCart className="h-6 w-6" />
+        {shoppingList.length > 0 && (
+          <span className="absolute -top-1 -right-1 h-6 min-w-6 px-1 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold flex items-center justify-center border-2 border-background">
+            {shoppingList.length}
+          </span>
         )}
-      </div>
+      </button>
+
+      <Sheet open={cartOpen} onOpenChange={setCartOpen}>
+        <SheetContent side="bottom" className="rounded-t-3xl bg-card border-border/60 max-h-[80vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5 text-primary" /> Lista de compras
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-4">
+            {shoppingList.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Tudo em ordem! Nenhum item abaixo do mínimo.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {shoppingList.map((i: any) => {
+                  const need = Math.max(0, Number(i.min_threshold) - Number(i.current_qty));
+                  return (
+                    <li key={i.id} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-muted/40">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-sm">{i.name}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          atual {i.current_qty} {i.unit} · mín {i.min_threshold}
+                        </p>
+                      </div>
+                      <span className="text-xs font-semibold text-primary tabular-nums shrink-0 ml-2">
+                        comprar {need} {i.unit}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent className="max-w-md rounded-3xl bg-card border-border/60">
           <DialogHeader>
