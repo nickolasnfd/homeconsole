@@ -31,7 +31,7 @@ export default function Inventory() {
       {data.map((i) => {
         const low = Number(i.current_qty) < Number(i.min_threshold);
         return (
-          <div key={i.id} className="bg-card rounded-2xl p-4 shadow-card">
+          <div key={i.id} className="bg-card border border-border/60 rounded-2xl p-4 shadow-card">
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">

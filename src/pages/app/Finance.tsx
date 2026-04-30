@@ -32,12 +32,12 @@ export default function Finance() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-card rounded-2xl p-4 shadow-card">
+        <div className="bg-card border border-border/60 rounded-2xl p-4 shadow-card">
           <p className="text-xs text-muted-foreground font-medium">Pendente</p>
           <p className="text-xl font-bold text-destructive mt-1">{formatCurrency(pendingTotal)}</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">{pending.length} contas</p>
         </div>
-        <div className="bg-card rounded-2xl p-4 shadow-card">
+        <div className="bg-card border border-border/60 rounded-2xl p-4 shadow-card">
           <p className="text-xs text-muted-foreground font-medium">Pago</p>
           <p className="text-xl font-bold text-success mt-1">{formatCurrency(paidTotal)}</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">{paid.length} contas</p>
@@ -52,7 +52,7 @@ export default function Finance() {
       ) : (
         <div className="space-y-2">
           {data.map((f) => (
-            <div key={f.id} className="bg-card rounded-2xl p-4 shadow-card flex items-center gap-3">
+            <div key={f.id} className="bg-card border border-border/60 rounded-2xl p-4 shadow-card flex items-center gap-3">
               <button
                 onClick={() => toggle(f)}
                 className={`h-10 w-10 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${
