@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export function InventoryForm({ onDone }: { onDone: () => void }) {
+  const qc = useQueryClient();
   const [form, setForm] = useState({
     name: "",
     category: "geral",
@@ -20,16 +22,21 @@ export function InventoryForm({ onDone }: { onDone: () => void }) {
     e.preventDefault();
     if (!form.name.trim()) return toast.error("O nome é obrigatório");
     setSaving(true);
-    const { error } = await supabase.from("inventory").insert({
+    const { data, error } = await supabase.from("inventory").insert({
       name: form.name.trim(),
       category: form.category.trim() || "geral",
       current_qty: Number(form.current_qty) || 0,
       min_threshold: Number(form.min_threshold) || 0,
       unit: form.unit.trim() || "un",
       expires_at: form.expires_at || null,
-    });
+    }).select().single();
     setSaving(false);
     if (error) return toast.error(error.message);
+    // Atualização otimista do cache: já injeta o item sem esperar refetch.
+    qc.setQueriesData({ queryKey: ["inventory"] }, (old: any[] | undefined) => {
+      const list = Array.isArray(old) ? [...old, data] : [data];
+      return list.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    });
     toast.success("Item adicionado");
     onDone();
   }

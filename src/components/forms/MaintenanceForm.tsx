@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +12,7 @@ import { addDaysISO, todayISO } from "@/lib/format";
 import { toast } from "sonner";
 
 export function MaintenanceForm({ onDone }: { onDone: () => void }) {
+  const qc = useQueryClient();
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -26,16 +28,20 @@ export function MaintenanceForm({ onDone }: { onDone: () => void }) {
     setSaving(true);
     const freq = Math.max(1, Number(form.frequency_days) || 30);
     const next_due_date = addDaysISO(form.last_performed_date || todayISO(), freq);
-    const { error } = await supabase.from("maintenance").insert({
+    const { data, error } = await supabase.from("maintenance").insert({
       title: form.title.trim(),
       description: form.description.trim() || null,
       frequency_days: freq,
       last_performed_date: form.last_performed_date || null,
       next_due_date,
       priority_level: form.priority_level,
-    });
+    }).select().single();
     setSaving(false);
     if (error) return toast.error(error.message);
+    qc.setQueriesData({ queryKey: ["maintenance"] }, (old: any[] | undefined) => {
+      const list = Array.isArray(old) ? [...old, data] : [data];
+      return list.sort((a, b) => String(a.next_due_date).localeCompare(String(b.next_due_date)));
+    });
     toast.success("Tarefa de manutenção adicionada");
     onDone();
   }

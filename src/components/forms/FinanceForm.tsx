@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +11,7 @@ import { todayISO } from "@/lib/format";
 import { toast } from "sonner";
 
 export function FinanceForm({ onDone }: { onDone: () => void }) {
+  const qc = useQueryClient();
   const [form, setForm] = useState({
     description: "",
     amount: "",
@@ -23,15 +25,19 @@ export function FinanceForm({ onDone }: { onDone: () => void }) {
     e.preventDefault();
     if (!form.description.trim()) return toast.error("A descrição é obrigatória");
     setSaving(true);
-    const { error } = await supabase.from("finances").insert({
+    const { data, error } = await supabase.from("finances").insert({
       description: form.description.trim(),
       amount: Number(form.amount) || 0,
       due_date: form.due_date || todayISO(),
       status: form.status,
       category: form.category.trim() || "geral",
-    });
+    }).select().single();
     setSaving(false);
     if (error) return toast.error(error.message);
+    qc.setQueriesData({ queryKey: ["finances"] }, (old: any[] | undefined) => {
+      const list = Array.isArray(old) ? [...old, data] : [data];
+      return list.sort((a, b) => String(a.due_date).localeCompare(String(b.due_date)));
+    });
     toast.success("Despesa adicionada");
     onDone();
   }
