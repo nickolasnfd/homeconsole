@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useTable } from "@/hooks/useTable";
 import { daysUntil, formatCurrency, formatDate } from "@/lib/format";
-import { AlertTriangle, Package, Wallet, Wrench, ArrowUp, ArrowDown } from "lucide-react";
+import { AlertTriangle, Package, Wallet, Wrench } from "lucide-react";
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
