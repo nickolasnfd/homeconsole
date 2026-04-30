@@ -59,32 +59,6 @@ export default function Inventory() {
   return (
     <div className="space-y-3">
       {addButton}
-      {shoppingList.length > 0 && (
-        <div className="bg-card border border-border/60 rounded-2xl p-4 shadow-card">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <ShoppingCart className="h-4 w-4 text-primary" />
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-sm">Lista de compras</p>
-              <p className="text-xs text-muted-foreground">{shoppingList.length} {shoppingList.length === 1 ? "item abaixo do mínimo" : "itens abaixo do mínimo"}</p>
-            </div>
-          </div>
-          <ul className="space-y-1.5">
-            {shoppingList.map((i: any) => {
-              const need = Math.max(0, Number(i.min_threshold) - Number(i.current_qty));
-              return (
-                <li key={i.id} className="flex items-center justify-between text-sm py-1.5 px-2 rounded-lg bg-muted/40">
-                  <span className="truncate font-medium">{i.name}</span>
-                  <span className="text-xs text-muted-foreground tabular-nums shrink-0 ml-2">
-                    comprar ~{need} {i.unit}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
       {data.map((i) => {
         const low = Number(i.current_qty) < Number(i.min_threshold);
         return (
@@ -127,6 +101,43 @@ export default function Inventory() {
           </div>
         );
       })}
+      <div className="pt-2">
+        <div className="flex items-center gap-2 mb-2 px-1">
+          <ShoppingCart className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-semibold">Lista de compras</h2>
+        </div>
+        {shoppingList.length === 0 ? (
+          <div className="bg-card border border-border/60 rounded-2xl p-4 shadow-card text-center">
+            <p className="text-sm text-muted-foreground">
+              Nenhum item abaixo do mínimo. Tudo em ordem!
+            </p>
+          </div>
+        ) : (
+          <div className="bg-card border border-border/60 rounded-2xl p-4 shadow-card">
+            <p className="text-xs text-muted-foreground mb-3">
+              {shoppingList.length} {shoppingList.length === 1 ? "item precisa ser comprado" : "itens precisam ser comprados"}
+            </p>
+            <ul className="space-y-1.5">
+              {shoppingList.map((i: any) => {
+                const need = Math.max(0, Number(i.min_threshold) - Number(i.current_qty));
+                return (
+                  <li key={i.id} className="flex items-center justify-between text-sm py-2 px-3 rounded-lg bg-muted/40">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{i.name}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        atual {i.current_qty} {i.unit} • mín {i.min_threshold}
+                      </p>
+                    </div>
+                    <span className="text-xs font-semibold text-primary tabular-nums shrink-0 ml-2">
+                      comprar {need} {i.unit}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+      </div>
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent className="max-w-md rounded-3xl bg-card border-border/60">
           <DialogHeader>
