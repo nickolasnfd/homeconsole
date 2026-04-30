@@ -14,17 +14,28 @@ export default function Maintenance() {
   async function complete(m: any) {
     const today = todayISO();
     const next = addDaysISO(today, m.frequency_days || 30);
+    qc.setQueriesData({ queryKey: ["maintenance"] }, (old: any[] | undefined) =>
+      (old ?? []).map((it) => (it.id === m.id ? { ...it, last_performed_date: today, next_due_date: next } : it))
+    );
     const { error } = await supabase.from("maintenance")
       .update({ last_performed_date: today, next_due_date: next }).eq("id", m.id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      qc.invalidateQueries({ queryKey: ["maintenance"] });
+      return toast.error(error.message);
+    }
     toast.success(`${m.title} concluída`);
-    qc.invalidateQueries({ queryKey: ["maintenance"] });
   }
 
   async function remove(id: string) {
+    const prev = qc.getQueryData<any[]>(["maintenance"]);
+    qc.setQueriesData({ queryKey: ["maintenance"] }, (old: any[] | undefined) =>
+      (old ?? []).filter((it) => it.id !== id)
+    );
     const { error } = await supabase.from("maintenance").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    qc.invalidateQueries({ queryKey: ["maintenance"] });
+    if (error) {
+      qc.setQueryData(["maintenance"], prev);
+      return toast.error(error.message);
+    }
   }
 
   const addButton = (

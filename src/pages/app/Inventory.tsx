@@ -13,16 +13,27 @@ export default function Inventory() {
 
   async function adjust(id: string, current: number, delta: number) {
     const next = Math.max(0, Number(current) + delta);
+    qc.setQueriesData({ queryKey: ["inventory"] }, (old: any[] | undefined) =>
+      (old ?? []).map((it) => (it.id === id ? { ...it, current_qty: next } : it))
+    );
     const { error } = await supabase.from("inventory").update({ current_qty: next }).eq("id", id);
-    if (error) toast.error(error.message);
-    qc.invalidateQueries({ queryKey: ["inventory"] });
+    if (error) {
+      toast.error(error.message);
+      qc.invalidateQueries({ queryKey: ["inventory"] });
+    }
   }
 
   async function remove(id: string) {
+    const prev = qc.getQueryData<any[]>(["inventory"]);
+    qc.setQueriesData({ queryKey: ["inventory"] }, (old: any[] | undefined) =>
+      (old ?? []).filter((it) => it.id !== id)
+    );
     const { error } = await supabase.from("inventory").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      qc.setQueryData(["inventory"], prev);
+      return toast.error(error.message);
+    }
     toast.success("Item removido");
-    qc.invalidateQueries({ queryKey: ["inventory"] });
   }
 
   const addButton = (

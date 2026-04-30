@@ -18,15 +18,26 @@ export default function Finance() {
 
   async function toggle(f: any) {
     const next = f.status === "paid" ? "pending" : "paid";
+    qc.setQueriesData({ queryKey: ["finances"] }, (old: any[] | undefined) =>
+      (old ?? []).map((it) => (it.id === f.id ? { ...it, status: next } : it))
+    );
     const { error } = await supabase.from("finances").update({ status: next }).eq("id", f.id);
-    if (error) return toast.error(error.message);
-    qc.invalidateQueries({ queryKey: ["finances"] });
+    if (error) {
+      qc.invalidateQueries({ queryKey: ["finances"] });
+      return toast.error(error.message);
+    }
   }
 
   async function remove(id: string) {
+    const prev = qc.getQueryData<any[]>(["finances"]);
+    qc.setQueriesData({ queryKey: ["finances"] }, (old: any[] | undefined) =>
+      (old ?? []).filter((it) => it.id !== id)
+    );
     const { error } = await supabase.from("finances").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    qc.invalidateQueries({ queryKey: ["finances"] });
+    if (error) {
+      qc.setQueryData(["finances"], prev);
+      return toast.error(error.message);
+    }
   }
 
   if (isLoading) return <div className="space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-20 bg-card rounded-2xl shadow-card animate-pulse" />)}</div>;
