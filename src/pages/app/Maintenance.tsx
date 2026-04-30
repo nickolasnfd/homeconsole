@@ -40,7 +40,7 @@ export default function Maintenance() {
           "bg-success/10 text-success";
         const label = overdue ? `${Math.abs(days)}d atrasada` : days === 0 ? "Vence hoje" : `Em ${days}d`;
         return (
-          <div key={m.id} className="bg-card rounded-2xl p-4 shadow-card">
+          <div key={m.id} className="bg-card border border-border/60 rounded-2xl p-4 shadow-card">
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="font-semibold">{m.title}</p>
