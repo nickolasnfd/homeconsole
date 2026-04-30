@@ -3,15 +3,30 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+export const INVENTORY_CATEGORIES = [
+  "Hortifrúti",
+  "Carnes e Peixes",
+  "Laticínios",
+  "Padaria",
+  "Mercearia",
+  "Bebidas",
+  "Congelados",
+  "Higiene",
+  "Limpeza",
+  "Pet",
+  "Outros",
+];
 
 export function InventoryForm({ onDone, initial }: { onDone: () => void; initial?: any }) {
   const qc = useQueryClient();
   const isEdit = !!initial?.id;
   const [form, setForm] = useState({
     name: initial?.name ?? "",
-    category: initial?.category ?? "geral",
+    category: initial?.category ?? "Mercearia",
     current_qty: initial?.current_qty != null ? String(initial.current_qty) : "1",
     min_threshold: initial?.min_threshold != null ? String(initial.min_threshold) : "1",
     unit: initial?.unit ?? "un",
@@ -65,7 +80,16 @@ export function InventoryForm({ onDone, initial }: { onDone: () => void; initial
           <Input type="number" min="0" step="0.1" value={form.min_threshold} onChange={(e) => setForm({ ...form, min_threshold: e.target.value })} />
         </Field>
         <Field label="Categoria">
-          <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Despensa" maxLength={40} />
+          <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione" />
+            </SelectTrigger>
+            <SelectContent>
+              {INVENTORY_CATEGORIES.map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </Field>
       </div>
       <Field label="Validade (opcional)">
