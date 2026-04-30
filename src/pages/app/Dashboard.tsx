@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { useTable } from "@/hooks/useTable";
 import { daysUntil, formatCurrency, formatDate } from "@/lib/format";
-import { AlertTriangle, Package, Wallet, Wrench } from "lucide-react";
+import { AlertTriangle, Package, Wallet, Wrench, ArrowUp, ArrowDown } from "lucide-react";
 import {
-  Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell,
+  Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { Link } from "react-router-dom";
 
@@ -35,6 +35,33 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-5">
+      {/* Hero balance card */}
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-card border border-border/60 shadow-elevated p-5">
+        <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-primary/15 blur-2xl" />
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Resumo do mês</p>
+        <p className="mt-1 text-4xl font-bold tracking-tight">{formatCurrency(pendingTotal + finances.data?.filter((f:any)=>f.status==="paid").reduce((s:number,f:any)=>s+Number(f.amount||0),0) || 0)}</p>
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-full bg-success/15 flex items-center justify-center">
+              <ArrowUp className="h-4 w-4 text-success" />
+            </div>
+            <div>
+              <p className="text-sm font-bold tabular-nums">{formatCurrency((finances.data ?? []).filter((f:any)=>f.status==="paid").reduce((s:number,f:any)=>s+Number(f.amount||0),0))}</p>
+              <p className="text-[10px] text-muted-foreground">Pago</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-full bg-destructive/15 flex items-center justify-center">
+              <ArrowDown className="h-4 w-4 text-destructive" />
+            </div>
+            <div>
+              <p className="text-sm font-bold tabular-nums">{formatCurrency(pendingTotal)}</p>
+              <p className="text-[10px] text-muted-foreground">Pendente</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="grid gap-3">
         <SummaryCard
           to="/maintenance"
@@ -63,9 +90,15 @@ export default function Dashboard() {
       </div>
 
       <Section title="Despesas mensais" subtitle="Últimos 6 meses">
-        <div className="h-44 -mx-2">
+        <div className="h-48 -mx-2">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={monthly} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+            <AreaChart data={monthly} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="cyanFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.5} />
+                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
               <XAxis dataKey="month" tickLine={false} axisLine={false} fontSize={11} stroke="hsl(var(--muted-foreground))" />
               <YAxis tickLine={false} axisLine={false} fontSize={11} stroke="hsl(var(--muted-foreground))" width={32} />
@@ -74,12 +107,8 @@ export default function Dashboard() {
                 contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12 }}
                 formatter={(v: number) => formatCurrency(v)}
               />
-              <Bar dataKey="total" radius={[8, 8, 0, 0]}>
-                {monthly.map((_, i) => (
-                  <Cell key={i} fill="hsl(var(--primary))" />
-                ))}
-              </Bar>
-            </BarChart>
+              <Area type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#cyanFill)" />
+            </AreaChart>
           </ResponsiveContainer>
         </div>
       </Section>
@@ -114,11 +143,11 @@ function SummaryCard({ to, icon, label, value, hint, tone }: {
   const ring =
     tone === "danger" ? "bg-destructive/10 text-destructive" :
     tone === "warning" ? "bg-warning/15 text-warning" :
-    "bg-success/10 text-success";
+    "bg-success/15 text-success";
   return (
-    <Link to={to} className="block bg-card rounded-2xl p-4 shadow-card active:scale-[0.99] transition-transform">
+    <Link to={to} className="block bg-card border border-border/60 rounded-2xl p-4 shadow-card active:scale-[0.99] transition-transform">
       <div className="flex items-center gap-3">
-        <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${ring}`}>{icon}</div>
+        <div className={`h-11 w-11 rounded-2xl flex items-center justify-center ${ring}`}>{icon}</div>
         <div className="flex-1 min-w-0">
           <p className="text-xs font-medium text-muted-foreground">{label}</p>
           <p className="text-2xl font-bold leading-tight">{value}</p>
@@ -131,7 +160,7 @@ function SummaryCard({ to, icon, label, value, hint, tone }: {
 
 function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <section className="bg-card rounded-2xl p-4 shadow-card">
+    <section className="bg-card border border-border/60 rounded-[22px] p-4 shadow-card">
       <div className="flex items-baseline justify-between mb-3">
         <h2 className="text-sm font-semibold">{title}</h2>
         {subtitle && <span className="text-[11px] text-muted-foreground">{subtitle}</span>}
@@ -157,7 +186,7 @@ function InventoryMiniChart({ data }: { data: any[] }) {
             </div>
             <div className="h-2 bg-muted rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full ${low ? "bg-destructive" : "bg-success"}`}
+                className={`h-full rounded-full ${low ? "bg-destructive" : "bg-gradient-primary"}`}
                 style={{ width: `${pct}%` }}
               />
             </div>
