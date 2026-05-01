@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useTable } from "@/hooks/useTable";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency, formatDate, addFrequencyISO, todayISO } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { Trash2 } from "lucide-react";
+import { Trash2, Repeat } from "lucide-react";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { AddItemButton } from "@/components/AddItemButton";
@@ -22,13 +22,49 @@ export default function Finance() {
 
   async function toggle(f: any) {
     const next = f.status === "paid" ? "pending" : "paid";
+    const isRecurring = !!f.frequency_value;
+    const today = todayISO();
+
     qc.setQueriesData({ queryKey: ["finances"] }, (old: any[] | undefined) =>
-      (old ?? []).map((it) => (it.id === f.id ? { ...it, status: next } : it))
+      (old ?? []).map((it) => (it.id === f.id ? { ...it, status: next, last_paid_date: next === "paid" ? today : it.last_paid_date } : it))
     );
-    const { error } = await supabase.from("finances").update({ status: next }).eq("id", f.id);
+    const { error } = await supabase
+      .from("finances")
+      .update({ status: next, last_paid_date: next === "paid" ? today : null })
+      .eq("id", f.id);
     if (error) {
       qc.invalidateQueries({ queryKey: ["finances"] });
       return toast.error(error.message);
+    }
+
+    // Se recorrente e foi marcada como paga, gera a próxima ocorrência a partir do vencimento original
+    if (isRecurring && next === "paid") {
+      const unit = (f.frequency_unit === "months" ? "months" : "days") as "days" | "months";
+      const amount = Math.max(1, Number(f.frequency_value) || 1);
+      const nextDue = addFrequencyISO(f.due_date, amount, unit);
+      const newRow = {
+        description: f.description,
+        amount: Number(f.amount) || 0,
+        due_date: nextDue,
+        status: "pending",
+        category: f.category,
+        frequency_value: amount,
+        frequency_unit: unit,
+      };
+      const { data: created, error: createErr } = await supabase
+        .from("finances")
+        .insert(newRow)
+        .select()
+        .single();
+      if (createErr) {
+        toast.error("Não foi possível gerar a próxima ocorrência");
+      } else {
+        qc.setQueriesData({ queryKey: ["finances"] }, (old: any[] | undefined) => {
+          const base = Array.isArray(old) ? old : [];
+          return [...base, created].sort((a, b) => String(a.due_date).localeCompare(String(b.due_date)));
+        });
+        toast.success(`Próxima despesa agendada para ${formatDate(nextDue)}`);
+      }
     }
   }
 
@@ -118,7 +154,12 @@ export default function Finance() {
               </button>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold truncate">{f.description}</p>
-                <p className="text-xs text-muted-foreground">{f.category} • {formatDate(f.due_date)}</p>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <span>{f.category} • {formatDate(f.due_date)}</span>
+                  {f.frequency_value ? (
+                    <Repeat className="h-3 w-3 text-primary shrink-0" aria-label="Recorrente" />
+                  ) : null}
+                </p>
               </div>
               <div className="text-right">
                 <p className="font-bold tabular-nums">{formatCurrency(Number(f.amount))}</p>
