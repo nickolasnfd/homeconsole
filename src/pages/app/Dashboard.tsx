@@ -1,7 +1,7 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 import { useTable } from "@/hooks/useTable";
 import { daysUntil, formatCurrency, formatDate } from "@/lib/format";
-import { AlertTriangle, Package, Wallet, Wrench } from "lucide-react";
+import { AlertTriangle, Wrench } from "lucide-react";
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
@@ -14,8 +14,6 @@ export default function Dashboard() {
 
   const lowStock = (inventory.data ?? []).filter((i) => Number(i.current_qty) < Number(i.min_threshold));
   const criticalMaint = (maintenance.data ?? []).filter((m) => daysUntil(m.next_due_date) < 7);
-  const pendingBills = (finances.data ?? []).filter((f) => f.status === "pending");
-  const pendingTotal = pendingBills.reduce((s, f) => s + Number(f.amount || 0), 0);
 
   const monthly = useMemo(() => {
     const map = new Map<string, number>();
@@ -32,23 +30,6 @@ export default function Dashboard() {
     });
     return Array.from(map, ([month, total]) => ({ month, total }));
   }, [finances.data]);
-
-  const carouselRef = useRef<HTMLDivElement>(null);
-  const [activeCard, setActiveCard] = useState(0);
-  const totalCards = 3;
-
-  const handleCarouselScroll = () => {
-    const el = carouselRef.current;
-    if (!el) return;
-    const index = Math.round(el.scrollLeft / el.clientWidth);
-    if (index !== activeCard) setActiveCard(index);
-  };
-
-  const goToCard = (index: number) => {
-    const el = carouselRef.current;
-    if (!el) return;
-    el.scrollTo({ left: index * el.clientWidth, behavior: "smooth" });
-  };
 
   return (
     <div className="space-y-5">
@@ -81,57 +62,7 @@ export default function Dashboard() {
         lowCount={lowStock.length}
       />
 
-      <div
-        ref={carouselRef}
-        onScroll={handleCarouselScroll}
-        className="overflow-x-auto snap-x snap-mandatory scrollbar-none"
-      >
-        <div className="flex gap-4 pb-1">
-          <SummaryCard
-            to="/maintenance"
-            icon={<Wrench className="h-5 w-5" />}
-            label="Manutenções"
-            value={criticalMaint.length}
-            total={(maintenance.data ?? []).length}
-            hint={criticalMaint.length ? `${criticalMaint[0].title} • vence ${formatDate(criticalMaint[0].next_due_date)}` : "Tudo em dia"}
-            tone={criticalMaint.length ? "danger" : "success"}
-          />
-          <SummaryCard
-            to="/finance"
-            icon={<Wallet className="h-5 w-5" />}
-            label="Contas pendentes"
-            value={pendingBills.length}
-            total={(finances.data ?? []).length}
-            hint={pendingBills.length ? `${formatCurrency(pendingTotal)} em aberto` : "Nada a pagar"}
-            tone={pendingBills.length ? "danger" : "success"}
-          />
-          <SummaryCard
-            to="/inventory"
-            icon={<Package className="h-5 w-5" />}
-            label="Níveis de estoque"
-            value={lowStock.length}
-            total={(inventory.data ?? []).length}
-            hint={lowStock.length ? `${lowStock[0].name} abaixo do mínimo` : "Estoque saudável"}
-            tone={lowStock.length ? "warning" : "success"}
-          />
-        </div>
-      </div>
-
-      <div className="flex justify-center gap-1.5 -mt-2" role="tablist" aria-label="Indicadores do carrossel">
-        {Array.from({ length: totalCards }).map((_, i) => (
-          <button
-            key={i}
-            type="button"
-            role="tab"
-            aria-selected={activeCard === i}
-            aria-label={`Ir para cartão ${i + 1}`}
-            onClick={() => goToCard(i)}
-            className={`h-1.5 rounded-full transition-all ${
-              activeCard === i ? "w-5 bg-primary" : "w-1.5 bg-muted-foreground/30"
-            }`}
-          />
-        ))}
-      </div>
+      <MaintenanceDonutCard items={maintenance.data ?? []} />
 
       {criticalMaint.length > 0 && (
         <Section title="Tarefas próximas" subtitle="Próximos 7 dias">
