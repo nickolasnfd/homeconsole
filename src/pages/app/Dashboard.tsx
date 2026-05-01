@@ -90,7 +90,7 @@ export default function Dashboard() {
           <SummaryCard
             to="/maintenance"
             icon={<Wrench className="h-5 w-5" />}
-            label="Manutenções críticas"
+            label="Manutenções"
             value={criticalMaint.length}
             total={(maintenance.data ?? []).length}
             hint={criticalMaint.length ? `${criticalMaint[0].title} • vence ${formatDate(criticalMaint[0].next_due_date)}` : "Tudo em dia"}
@@ -108,7 +108,7 @@ export default function Dashboard() {
           <SummaryCard
             to="/inventory"
             icon={<Package className="h-5 w-5" />}
-            label="Alertas de estoque baixo"
+            label="Níveis de estoque"
             value={lowStock.length}
             total={(inventory.data ?? []).length}
             hint={lowStock.length ? `${lowStock[0].name} abaixo do mínimo` : "Estoque saudável"}
