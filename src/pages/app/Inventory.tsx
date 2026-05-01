@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 type Filter = "all" | "low" | "expiring";
 
@@ -171,19 +172,38 @@ export default function Inventory() {
             return a.cat.localeCompare(b.cat, "pt-BR");
           });
 
-        return sortedGroups.map(({ cat, items, lowCount }) => (
-          <div key={cat} className="space-y-3">
-            <div className="flex items-center justify-between px-1 pt-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {cat}
-              </h3>
-              {lowCount > 0 && (
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-destructive/15 text-destructive">
-                  {lowCount} em falta
-                </span>
-              )}
-            </div>
-            {items.map((i) => {
+        const defaultOpen = sortedGroups
+          .filter((g) => g.lowCount > 0)
+          .map((g) => g.cat);
+
+        return (
+          <Accordion type="multiple" defaultValue={defaultOpen} className="space-y-2">
+            {sortedGroups.map(({ cat, items, lowCount }) => (
+              <AccordionItem
+                key={cat}
+                value={cat}
+                className="border border-border/60 rounded-2xl bg-card/40 px-3 data-[state=open]:bg-transparent"
+              >
+                <AccordionTrigger className="py-3 hover:no-underline">
+                  <div className="flex items-center justify-between gap-2 flex-1 pr-2">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground text-left">
+                      {cat}
+                    </h3>
+                    <div className="flex items-center gap-1.5">
+                      {lowCount > 0 && (
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-destructive/15 text-destructive">
+                          {lowCount} em falta
+                        </span>
+                      )}
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                        {items.length}
+                      </span>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-3">
+                  <div className="space-y-3">
+                  {items.map((i) => {
         const low = Number(i.current_qty) < Number(i.min_threshold);
         const need = low ? Math.max(0, Number(i.min_threshold) - Number(i.current_qty)) : 0;
         const min = Number(i.min_threshold) || 0;
@@ -249,9 +269,13 @@ export default function Inventory() {
             </div>
           </div>
         );
-            })}
-          </div>
-        ));
+                  })}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        );
       })()}
 
       {/* FAB carrinho */}
