@@ -19,9 +19,13 @@ export default function Maintenance() {
     const isOneTime = m.task_type === "one_time";
     const unit = (m.frequency_unit === "months" ? "months" : "days") as "days" | "months";
     const amount = unit === "months" ? Math.max(1, Math.round((m.frequency_days || 30) / 30)) : (m.frequency_days || 30);
+    // Lógica inteligente: se concluiu adiantado (antes do vencimento), mantém o ritmo
+    // calculando a partir do vencimento original. Se concluiu atrasado, parte de hoje
+    // para evitar acumular atrasos.
+    const base = !isOneTime && m.next_due_date && m.next_due_date >= today ? m.next_due_date : today;
     const update = isOneTime
       ? { last_performed_date: today, completed: true }
-      : { last_performed_date: today, next_due_date: addFrequencyISO(today, amount, unit), completed: false };
+      : { last_performed_date: today, next_due_date: addFrequencyISO(base, amount, unit), completed: false };
     qc.setQueriesData({ queryKey: ["maintenance"] }, (old: any[] | undefined) =>
       (old ?? []).map((it) => (it.id === m.id ? { ...it, ...update } : it))
     );
@@ -30,7 +34,14 @@ export default function Maintenance() {
       qc.invalidateQueries({ queryKey: ["maintenance"] });
       return toast.error(error.message);
     }
-    toast.success(`${m.title} concluída`);
+    if (isOneTime) {
+      toast.success(`${m.title} concluída`);
+    } else {
+      const wasEarly = m.next_due_date && m.next_due_date > today;
+      toast.success(
+        `${m.title} concluída • próxima ${formatDate(update.next_due_date as string)}${wasEarly ? " (ritmo mantido)" : ""}`
+      );
+    }
   }
 
   async function remove(id: string) {
