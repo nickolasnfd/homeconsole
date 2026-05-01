@@ -43,11 +43,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               {meta.title}
             </h1>
           </div>
-          <button className="h-10 w-10 rounded-xl bg-card border border-border/60 flex flex-col items-center justify-center gap-1" aria-label="Menu">
-            <span className="block h-0.5 w-4 bg-foreground/80 rounded-full" />
-            <span className="block h-0.5 w-4 bg-foreground/80 rounded-full" />
-            <span className="block h-0.5 w-4 bg-foreground/80 rounded-full" />
-          </button>
         </div>
       </header>
 
