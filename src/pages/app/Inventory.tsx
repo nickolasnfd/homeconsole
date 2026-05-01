@@ -146,7 +146,44 @@ export default function Inventory() {
         </div>
       )}
 
-      {filtered.map((i) => {
+      {(() => {
+        const groups = new Map<string, any[]>();
+        for (const it of filtered) {
+          const cat = (it.category ?? "").trim() || "Sem categoria";
+          if (!groups.has(cat)) groups.set(cat, []);
+          groups.get(cat)!.push(it);
+        }
+        const sortedGroups = Array.from(groups.entries())
+          .map(([cat, items]) => {
+            const sorted = [...items].sort((a, b) => {
+              const aLow = Number(a.current_qty) < Number(a.min_threshold) ? 0 : 1;
+              const bLow = Number(b.current_qty) < Number(b.min_threshold) ? 0 : 1;
+              if (aLow !== bLow) return aLow - bLow;
+              return String(a.name).localeCompare(String(b.name), "pt-BR");
+            });
+            const lowCount = sorted.filter(
+              (it) => Number(it.current_qty) < Number(it.min_threshold)
+            ).length;
+            return { cat, items: sorted, lowCount };
+          })
+          .sort((a, b) => {
+            if (a.lowCount !== b.lowCount) return b.lowCount - a.lowCount;
+            return a.cat.localeCompare(b.cat, "pt-BR");
+          });
+
+        return sortedGroups.map(({ cat, items, lowCount }) => (
+          <div key={cat} className="space-y-3">
+            <div className="flex items-center justify-between px-1 pt-2">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {cat}
+              </h3>
+              {lowCount > 0 && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-destructive/15 text-destructive">
+                  {lowCount} em falta
+                </span>
+              )}
+            </div>
+            {items.map((i) => {
         const low = Number(i.current_qty) < Number(i.min_threshold);
         const need = low ? Math.max(0, Number(i.min_threshold) - Number(i.current_qty)) : 0;
         const min = Number(i.min_threshold) || 0;
@@ -212,7 +249,10 @@ export default function Inventory() {
             </div>
           </div>
         );
-      })}
+            })}
+          </div>
+        ));
+      })()}
 
       {/* FAB carrinho */}
       <button
