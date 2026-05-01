@@ -3,7 +3,7 @@ import { useTable } from "@/hooks/useTable";
 import { formatCurrency, formatDate, addFrequencyISO, todayISO } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { Trash2, Repeat } from "lucide-react";
+import { Trash2, Repeat, CalendarClock } from "lucide-react";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { AddItemButton } from "@/components/AddItemButton";
@@ -15,10 +15,47 @@ export default function Finance() {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<any | null>(null);
 
-  const pending = data.filter((f) => f.status === "pending");
-  const paid = data.filter((f) => f.status === "paid");
+  // Janela do mês atual e do próximo mês
+  const now = new Date();
+  const curYear = now.getFullYear();
+  const curMonth = now.getMonth();
+  const nextMonthDate = new Date(curYear, curMonth + 1, 1);
+  const nextYear = nextMonthDate.getFullYear();
+  const nextMonth = nextMonthDate.getMonth();
+
+  const inMonth = (iso: string | null | undefined, y: number, m: number) => {
+    if (!iso) return false;
+    const d = new Date(iso);
+    return d.getFullYear() === y && d.getMonth() === m;
+  };
+
+  const currentMonthItems = data.filter((f) => inMonth(f.due_date, curYear, curMonth));
+  const pending = currentMonthItems.filter((f) => f.status === "pending");
+  const paid = currentMonthItems.filter((f) => f.status === "paid");
   const pendingTotal = pending.reduce((s, f) => s + Number(f.amount || 0), 0);
   const paidTotal = paid.reduce((s, f) => s + Number(f.amount || 0), 0);
+
+  // Próximo mês: despesas já cadastradas + projeção das recorrentes do mês atual
+  // que ainda não têm uma próxima ocorrência cadastrada no próximo mês.
+  const nextMonthExisting = data.filter((f) => inMonth(f.due_date, nextYear, nextMonth));
+  const projectedRecurring = currentMonthItems
+    .filter((f) => f.frequency_value)
+    .map((f) => {
+      const unit = (f.frequency_unit === "months" ? "months" : "days") as "days" | "months";
+      const amount = Math.max(1, Number(f.frequency_value) || 1);
+      const projectedDue = addFrequencyISO(f.due_date, amount, unit);
+      return { ...f, due_date: projectedDue, _projected: true };
+    })
+    .filter((p) => inMonth(p.due_date, nextYear, nextMonth))
+    .filter(
+      (p) =>
+        !nextMonthExisting.some(
+          (e) => e.description === p.description && Number(e.amount) === Number(p.amount)
+        )
+    );
+  const nextMonthItems = [...nextMonthExisting, ...projectedRecurring];
+  const nextMonthTotal = nextMonthItems.reduce((s, f) => s + Number(f.amount || 0), 0);
+  const nextMonthLabel = nextMonthDate.toLocaleDateString("pt-BR", { month: "long" });
 
   async function toggle(f: any) {
     const next = f.status === "paid" ? "pending" : "paid";
@@ -111,6 +148,27 @@ export default function Finance() {
               <p className="text-sm font-bold tabular-nums">{formatCurrency(pendingTotal)}</p>
               <p className="text-[10px] text-muted-foreground">Pendente</p>
             </div>
+          </div>
+        </div>
+
+        {/* Divisor + prévia do próximo mês */}
+        <div className="mt-5 pt-4 border-t border-border/60">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-full bg-primary/15 flex items-center justify-center">
+                <CalendarClock className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <div>
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                  Previsão • {nextMonthLabel}
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  {nextMonthItems.length} {nextMonthItems.length === 1 ? "despesa" : "despesas"}
+                  {projectedRecurring.length > 0 && ` (${projectedRecurring.length} estimada${projectedRecurring.length === 1 ? "" : "s"})`}
+                </p>
+              </div>
+            </div>
+            <p className="text-lg font-bold tabular-nums">{formatCurrency(nextMonthTotal)}</p>
           </div>
         </div>
       </div>
