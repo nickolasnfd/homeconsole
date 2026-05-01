@@ -36,23 +36,54 @@ export default function Finance() {
   const paidTotal = paid.reduce((s, f) => s + Number(f.amount || 0), 0);
 
   // Próximo mês: despesas já cadastradas + projeção das recorrentes do mês atual
-  // que ainda não têm uma próxima ocorrência cadastrada no próximo mês.
+  // Toda despesa recorrente é considerada no próximo mês: se já existir uma ocorrência
+  // cadastrada para o próximo mês, conta a real; caso contrário, projeta a partir da
+  // ocorrência mais recente da mesma série (agrupada por descrição+categoria).
   const nextMonthExisting = data.filter((f) => inMonth(f.due_date, nextYear, nextMonth));
-  const projectedRecurring = currentMonthItems
-    .filter((f) => f.frequency_value)
-    .map((f) => {
-      const unit = (f.frequency_unit === "months" ? "months" : "days") as "days" | "months";
-      const amount = Math.max(1, Number(f.frequency_value) || 1);
-      const projectedDue = addFrequencyISO(f.due_date, amount, unit);
-      return { ...f, due_date: projectedDue, _projected: true };
-    })
-    .filter((p) => inMonth(p.due_date, nextYear, nextMonth))
-    .filter(
-      (p) =>
-        !nextMonthExisting.some(
-          (e) => e.description === p.description && Number(e.amount) === Number(p.amount)
-        )
+
+  // Agrupa recorrentes por "série" (descrição + categoria) e pega a ocorrência mais recente
+  const recurringSeries = new Map<string, any>();
+  for (const f of data) {
+    if (!f.frequency_value) continue;
+    const key = `${f.description}__${f.category}`;
+    const current = recurringSeries.get(key);
+    if (!current || String(f.due_date) > String(current.due_date)) {
+      recurringSeries.set(key, f);
+    }
+  }
+
+  const projectedRecurring: any[] = [];
+  for (const [key, f] of recurringSeries) {
+    // Se já existe uma ocorrência real cadastrada no próximo mês para esta série, pula
+    const alreadyInNext = nextMonthExisting.some(
+      (e) => `${e.description}__${e.category}` === key
     );
+    if (alreadyInNext) continue;
+
+    const unit = (f.frequency_unit === "months" ? "months" : "days") as "days" | "months";
+    const amount = Math.max(1, Number(f.frequency_value) || 1);
+    // Avança a data até cair no próximo mês (ou ultrapassá-lo)
+    let projectedDue = f.due_date;
+    let safety = 0;
+    while (
+      new Date(projectedDue) < nextMonthDate ||
+      !inMonth(projectedDue, nextYear, nextMonth)
+    ) {
+      const advanced = addFrequencyISO(projectedDue, amount, unit);
+      if (advanced === projectedDue) break;
+      projectedDue = advanced;
+      // Se passamos do próximo mês sem cair nele, paramos
+      const d = new Date(projectedDue);
+      if (d.getFullYear() > nextYear || (d.getFullYear() === nextYear && d.getMonth() > nextMonth)) {
+        break;
+      }
+      if (++safety > 60) break;
+    }
+    if (inMonth(projectedDue, nextYear, nextMonth)) {
+      projectedRecurring.push({ ...f, due_date: projectedDue, _projected: true });
+    }
+  }
+
   const nextMonthItems = [...nextMonthExisting, ...projectedRecurring];
   const nextMonthTotal = nextMonthItems.reduce((s, f) => s + Number(f.amount || 0), 0);
   const nextMonthLabel = nextMonthDate.toLocaleDateString("pt-BR", { month: "long" });
