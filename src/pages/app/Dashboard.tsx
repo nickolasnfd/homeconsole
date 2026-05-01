@@ -64,8 +64,8 @@ export default function Dashboard() {
         lowCount={lowStock.length}
       />
 
-      <div className="-mx-4 px-4 overflow-x-auto snap-x snap-mandatory scrollbar-none">
-        <div className="flex gap-3 pb-1">
+      <div className="overflow-x-auto snap-x snap-mandatory scrollbar-none">
+        <div className="flex gap-4 pb-1">
           <SummaryCard
             to="/maintenance"
             icon={<Wrench className="h-5 w-5" />}
@@ -130,7 +130,7 @@ function SummaryCard({ to, icon, label, value, total, hint, tone }: {
   return (
     <Link
       to={to}
-      className="snap-start shrink-0 w-[85%] bg-card border border-border/60 rounded-2xl p-4 shadow-card active:scale-[0.99] transition-transform"
+      className="snap-center shrink-0 w-full bg-card border border-border/60 rounded-2xl p-4 shadow-card active:scale-[0.99] transition-transform"
     >
       <div className="flex items-center gap-3">
         <div className={`h-11 w-11 rounded-2xl flex items-center justify-center ${ring}`}>{icon}</div>
