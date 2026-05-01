@@ -37,10 +37,7 @@ export default function Inventory() {
   async function copyShoppingList() {
     if (shoppingList.length === 0) return;
     const text = shoppingList
-      .map((i: any) => {
-        const need = Math.max(0, Number(i.min_threshold) - Number(i.current_qty));
-        return `- ${i.name} (${need} ${i.unit})`;
-      })
+      .map((i: any) => `- ${i.name}`)
       .join("\n");
     try {
       await navigator.clipboard.writeText(text);
@@ -246,22 +243,14 @@ export default function Inventory() {
             ) : (
               <>
                 <ul className="space-y-2">
-                  {shoppingList.map((i: any) => {
-                    const need = Math.max(0, Number(i.min_threshold) - Number(i.current_qty));
-                    return (
-                      <li key={i.id} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-muted/40">
-                        <div className="min-w-0">
-                          <p className="truncate font-medium text-sm">{i.name}</p>
-                          <p className="text-[11px] text-muted-foreground">
-                            atual {i.current_qty} {i.unit} · mín {i.min_threshold}
-                          </p>
-                        </div>
-                        <span className="text-xs font-medium text-muted-foreground tabular-nums shrink-0 ml-2">
-                          {need} {i.unit}
-                        </span>
-                      </li>
-                    );
-                  })}
+                  {shoppingList.map((i: any) => (
+                    <li key={i.id} className="py-2.5 px-3 rounded-xl bg-muted/40">
+                      <p className="truncate font-medium text-sm">{i.name}</p>
+                      {i.category && (
+                        <p className="text-[11px] text-muted-foreground">{i.category}</p>
+                      )}
+                    </li>
+                  ))}
                 </ul>
                 <Button
                   onClick={copyShoppingList}
