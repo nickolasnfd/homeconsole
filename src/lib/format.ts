@@ -23,3 +23,15 @@ export const addDaysISO = (base: string, days: number) => {
   d.setDate(d.getDate() + days);
   return d.toISOString().slice(0, 10);
 };
+
+export const addMonthsISO = (base: string, months: number) => {
+  const d = new Date(base);
+  d.setMonth(d.getMonth() + months);
+  return d.toISOString().slice(0, 10);
+};
+
+export const addFrequencyISO = (
+  base: string,
+  amount: number,
+  unit: "days" | "months"
+) => (unit === "months" ? addMonthsISO(base, amount) : addDaysISO(base, amount));

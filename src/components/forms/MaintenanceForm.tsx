@@ -8,7 +8,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { addDaysISO, todayISO } from "@/lib/format";
+import { addFrequencyISO, todayISO } from "@/lib/format";
 import { toast } from "sonner";
 
 export function MaintenanceForm({ onDone, initial }: { onDone: () => void; initial?: any }) {
@@ -17,7 +17,13 @@ export function MaintenanceForm({ onDone, initial }: { onDone: () => void; initi
   const [form, setForm] = useState({
     title: initial?.title ?? "",
     description: initial?.description ?? "",
-    frequency_days: String(initial?.frequency_days ?? "30"),
+    task_type: initial?.task_type ?? "recurring",
+    frequency_amount: String(
+      initial?.frequency_unit === "months"
+        ? Math.max(1, Math.round((initial?.frequency_days ?? 30) / 30))
+        : initial?.frequency_days ?? 30
+    ),
+    frequency_unit: initial?.frequency_unit ?? "days",
     last_performed_date: initial?.last_performed_date ?? todayISO(),
     priority_level: initial?.priority_level ?? "medium",
   });
@@ -27,16 +33,23 @@ export function MaintenanceForm({ onDone, initial }: { onDone: () => void; initi
     e.preventDefault();
     if (!form.title.trim()) return toast.error("O título é obrigatório");
     setSaving(true);
-    const freq = Math.max(1, Number(form.frequency_days) || 30);
-    const next_due_date = addDaysISO(form.last_performed_date || todayISO(), freq);
-    const payload = {
+    const isOneTime = form.task_type === "one_time";
+    const amount = Math.max(1, Number(form.frequency_amount) || 1);
+    const unit = (form.frequency_unit === "months" ? "months" : "days") as "days" | "months";
+    const freqDays = unit === "months" ? amount * 30 : amount;
+    const base = form.last_performed_date || todayISO();
+    const next_due_date = isOneTime ? base : addFrequencyISO(base, amount, unit);
+    const payload: any = {
       title: form.title.trim(),
       description: form.description.trim() || null,
-      frequency_days: freq,
-      last_performed_date: form.last_performed_date || null,
+      task_type: isOneTime ? "one_time" : "recurring",
+      frequency_days: freqDays,
+      frequency_unit: isOneTime ? "days" : unit,
+      last_performed_date: isOneTime ? null : form.last_performed_date || null,
       next_due_date,
       priority_level: form.priority_level,
     };
+    if (!isEdit) payload.completed = false;
     const q = isEdit
       ? supabase.from("maintenance").update(payload).eq("id", initial.id).select().single()
       : supabase.from("maintenance").insert(payload).select().single();
@@ -60,14 +73,40 @@ export function MaintenanceForm({ onDone, initial }: { onDone: () => void; initi
       <Field label="Descrição (opcional)">
         <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} maxLength={500} />
       </Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="A cada (dias)">
-          <Input type="number" min="1" value={form.frequency_days} onChange={(e) => setForm({ ...form, frequency_days: e.target.value })} />
-        </Field>
-        <Field label="Última vez">
+      <Field label="Tipo de tarefa">
+        <Select value={form.task_type} onValueChange={(v) => setForm({ ...form, task_type: v })}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="recurring">Recorrente</SelectItem>
+            <SelectItem value="one_time">Única (sem repetição)</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
+      {form.task_type === "recurring" ? (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="A cada">
+              <Input type="number" min="1" value={form.frequency_amount} onChange={(e) => setForm({ ...form, frequency_amount: e.target.value })} />
+            </Field>
+            <Field label="Unidade">
+              <Select value={form.frequency_unit} onValueChange={(v) => setForm({ ...form, frequency_unit: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="days">Dias</SelectItem>
+                  <SelectItem value="months">Meses</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
+          <Field label="Última vez">
+            <Input type="date" value={form.last_performed_date} onChange={(e) => setForm({ ...form, last_performed_date: e.target.value })} />
+          </Field>
+        </>
+      ) : (
+        <Field label="Data prevista">
           <Input type="date" value={form.last_performed_date} onChange={(e) => setForm({ ...form, last_performed_date: e.target.value })} />
         </Field>
-      </div>
+      )}
       <Field label="Prioridade">
         <Select value={form.priority_level} onValueChange={(v) => setForm({ ...form, priority_level: v })}>
           <SelectTrigger><SelectValue /></SelectTrigger>
