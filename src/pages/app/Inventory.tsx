@@ -3,7 +3,7 @@ import { useTable } from "@/hooks/useTable";
 import { formatDate } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { Trash2, Plus, Minus, AlertTriangle, ShoppingCart, CalendarClock, Search } from "lucide-react";
+import { Trash2, Plus, Minus, AlertTriangle, ShoppingCart, CalendarClock, Search, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { AddItemButton } from "@/components/AddItemButton";
 import { InventoryForm } from "@/components/forms/InventoryForm";
@@ -12,6 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 type Filter = "all" | "low" | "expiring";
 
@@ -32,6 +33,23 @@ export default function Inventory() {
   const [cartOpen, setCartOpen] = useState(false);
 
   const shoppingList = data.filter((i: any) => Number(i.current_qty) < Number(i.min_threshold));
+
+  async function copyShoppingList() {
+    if (shoppingList.length === 0) return;
+    const text = shoppingList
+      .map((i: any) => {
+        const need = Math.max(0, Number(i.min_threshold) - Number(i.current_qty));
+        return `- ${i.name} (${need} ${i.unit})`;
+      })
+      .join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Lista copiada para a área de transferência");
+    } catch {
+      toast.error("Não foi possível copiar a lista");
+    }
+  }
+
   const expiringList = data.filter((i: any) => {
     const d = daysUntil(i.expires_at);
     return d !== null && d <= 7;
@@ -226,24 +244,34 @@ export default function Inventory() {
                 Tudo em ordem! Nenhum item abaixo do mínimo.
               </p>
             ) : (
-              <ul className="space-y-2">
-                {shoppingList.map((i: any) => {
-                  const need = Math.max(0, Number(i.min_threshold) - Number(i.current_qty));
-                  return (
-                    <li key={i.id} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-muted/40">
-                      <div className="min-w-0">
-                        <p className="truncate font-medium text-sm">{i.name}</p>
-                        <p className="text-[11px] text-muted-foreground">
-                          atual {i.current_qty} {i.unit} · mín {i.min_threshold}
-                        </p>
-                      </div>
-                      <span className="text-xs font-semibold text-primary tabular-nums shrink-0 ml-2">
-                        comprar {need} {i.unit}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
+              <>
+                <ul className="space-y-2">
+                  {shoppingList.map((i: any) => {
+                    const need = Math.max(0, Number(i.min_threshold) - Number(i.current_qty));
+                    return (
+                      <li key={i.id} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-muted/40">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-sm">{i.name}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            atual {i.current_qty} {i.unit} · mín {i.min_threshold}
+                          </p>
+                        </div>
+                        <span className="text-xs font-medium text-muted-foreground tabular-nums shrink-0 ml-2">
+                          {need} {i.unit}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <Button
+                  onClick={copyShoppingList}
+                  className="w-full mt-4 rounded-xl"
+                  size="lg"
+                >
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copiar lista
+                </Button>
+              </>
             )}
           </div>
         </SheetContent>
