@@ -85,35 +85,44 @@ export type Database = {
       }
       maintenance: {
         Row: {
+          completed: boolean
           created_at: string
           description: string | null
           frequency_days: number
+          frequency_unit: string
           id: string
           last_performed_date: string | null
           next_due_date: string
           priority_level: string
+          task_type: string
           title: string
           updated_at: string
         }
         Insert: {
+          completed?: boolean
           created_at?: string
           description?: string | null
           frequency_days?: number
+          frequency_unit?: string
           id?: string
           last_performed_date?: string | null
           next_due_date?: string
           priority_level?: string
+          task_type?: string
           title: string
           updated_at?: string
         }
         Update: {
+          completed?: boolean
           created_at?: string
           description?: string | null
           frequency_days?: number
+          frequency_unit?: string
           id?: string
           last_performed_date?: string | null
           next_due_date?: string
           priority_level?: string
+          task_type?: string
           title?: string
           updated_at?: string
         }
