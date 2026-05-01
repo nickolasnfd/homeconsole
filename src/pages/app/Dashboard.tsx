@@ -1,7 +1,7 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 import { useTable } from "@/hooks/useTable";
 import { daysUntil, formatCurrency, formatDate } from "@/lib/format";
-import { AlertTriangle, Package, Wallet, Wrench } from "lucide-react";
+import { AlertTriangle, Wrench } from "lucide-react";
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
@@ -14,8 +14,6 @@ export default function Dashboard() {
 
   const lowStock = (inventory.data ?? []).filter((i) => Number(i.current_qty) < Number(i.min_threshold));
   const criticalMaint = (maintenance.data ?? []).filter((m) => daysUntil(m.next_due_date) < 7);
-  const pendingBills = (finances.data ?? []).filter((f) => f.status === "pending");
-  const pendingTotal = pendingBills.reduce((s, f) => s + Number(f.amount || 0), 0);
 
   const monthly = useMemo(() => {
     const map = new Map<string, number>();
@@ -32,23 +30,6 @@ export default function Dashboard() {
     });
     return Array.from(map, ([month, total]) => ({ month, total }));
   }, [finances.data]);
-
-  const carouselRef = useRef<HTMLDivElement>(null);
-  const [activeCard, setActiveCard] = useState(0);
-  const totalCards = 3;
-
-  const handleCarouselScroll = () => {
-    const el = carouselRef.current;
-    if (!el) return;
-    const index = Math.round(el.scrollLeft / el.clientWidth);
-    if (index !== activeCard) setActiveCard(index);
-  };
-
-  const goToCard = (index: number) => {
-    const el = carouselRef.current;
-    if (!el) return;
-    el.scrollTo({ left: index * el.clientWidth, behavior: "smooth" });
-  };
 
   return (
     <div className="space-y-5">
@@ -81,57 +62,7 @@ export default function Dashboard() {
         lowCount={lowStock.length}
       />
 
-      <div
-        ref={carouselRef}
-        onScroll={handleCarouselScroll}
-        className="overflow-x-auto snap-x snap-mandatory scrollbar-none"
-      >
-        <div className="flex gap-4 pb-1">
-          <SummaryCard
-            to="/maintenance"
-            icon={<Wrench className="h-5 w-5" />}
-            label="Manutenções"
-            value={criticalMaint.length}
-            total={(maintenance.data ?? []).length}
-            hint={criticalMaint.length ? `${criticalMaint[0].title} • vence ${formatDate(criticalMaint[0].next_due_date)}` : "Tudo em dia"}
-            tone={criticalMaint.length ? "danger" : "success"}
-          />
-          <SummaryCard
-            to="/finance"
-            icon={<Wallet className="h-5 w-5" />}
-            label="Contas pendentes"
-            value={pendingBills.length}
-            total={(finances.data ?? []).length}
-            hint={pendingBills.length ? `${formatCurrency(pendingTotal)} em aberto` : "Nada a pagar"}
-            tone={pendingBills.length ? "danger" : "success"}
-          />
-          <SummaryCard
-            to="/inventory"
-            icon={<Package className="h-5 w-5" />}
-            label="Níveis de estoque"
-            value={lowStock.length}
-            total={(inventory.data ?? []).length}
-            hint={lowStock.length ? `${lowStock[0].name} abaixo do mínimo` : "Estoque saudável"}
-            tone={lowStock.length ? "warning" : "success"}
-          />
-        </div>
-      </div>
-
-      <div className="flex justify-center gap-1.5 -mt-2" role="tablist" aria-label="Indicadores do carrossel">
-        {Array.from({ length: totalCards }).map((_, i) => (
-          <button
-            key={i}
-            type="button"
-            role="tab"
-            aria-selected={activeCard === i}
-            aria-label={`Ir para cartão ${i + 1}`}
-            onClick={() => goToCard(i)}
-            className={`h-1.5 rounded-full transition-all ${
-              activeCard === i ? "w-5 bg-primary" : "w-1.5 bg-muted-foreground/30"
-            }`}
-          />
-        ))}
-      </div>
+      <MaintenanceDonutCard items={maintenance.data ?? []} />
 
       {criticalMaint.length > 0 && (
         <Section title="Tarefas próximas" subtitle="Próximos 7 dias">
@@ -152,69 +83,110 @@ export default function Dashboard() {
   );
 }
 
-function SummaryCard({ to, icon, label, value, total, hint, tone }: {
-  to: string; icon: React.ReactNode; label: string; value: number; total: number; hint: string;
-  tone: "success" | "warning" | "danger";
-}) {
-  const ring =
-    tone === "danger" ? "bg-destructive/10 text-destructive" :
-    tone === "warning" ? "bg-warning/15 text-warning" :
-    "bg-success/15 text-success";
-  const stroke =
-    tone === "danger" ? "hsl(var(--destructive))" :
-    tone === "warning" ? "hsl(var(--warning))" :
-    "hsl(var(--success))";
+function MaintenanceDonutCard({ items }: { items: any[] }) {
+  const buckets = useMemo(() => {
+    let overdue = 0, soon = 0, ok = 0, done = 0;
+    items.forEach((m) => {
+      if (m.completed) { done++; return; }
+      const d = daysUntil(m.next_due_date);
+      if (d < 0) overdue++;
+      else if (d < 7) soon++;
+      else ok++;
+    });
+    return { overdue, soon, ok, done };
+  }, [items]);
+
+  const total = items.length;
+  const segments = [
+    { key: "overdue", label: "Atrasadas", value: buckets.overdue, color: "hsl(var(--destructive))" },
+    { key: "soon", label: "Próximas (7 dias)", value: buckets.soon, color: "hsl(var(--warning))" },
+    { key: "ok", label: "Em dia", value: buckets.ok, color: "hsl(var(--primary))" },
+    { key: "done", label: "Concluídas", value: buckets.done, color: "hsl(var(--success))" },
+  ];
+
+  // Donut math
+  const size = 132;
+  const stroke = 14;
+  const r = (size - stroke) / 2;
+  const cx = size / 2;
+  const cy = size / 2;
+  const C = 2 * Math.PI * r;
+
+  let offset = 0;
+  const arcs = segments.map((s) => {
+    const frac = total > 0 ? s.value / total : 0;
+    const dash = frac * C;
+    const arc = {
+      ...s,
+      dasharray: `${dash} ${C - dash}`,
+      dashoffset: -offset,
+    };
+    offset += dash;
+    return arc;
+  });
+
+  const headline = buckets.overdue > 0
+    ? { label: "Atrasadas", value: buckets.overdue, tone: "text-destructive" }
+    : buckets.soon > 0
+    ? { label: "Próximas", value: buckets.soon, tone: "text-warning" }
+    : { label: "Em dia", value: buckets.ok, tone: "text-success" };
+
   return (
     <Link
-      to={to}
-      className="snap-center shrink-0 w-full bg-card border border-border/60 rounded-2xl p-4 shadow-card active:scale-[0.99] transition-transform"
+      to="/maintenance"
+      className="block bg-card border border-border/60 rounded-[22px] p-4 shadow-card active:scale-[0.99] transition-transform"
     >
-      <div className="flex items-center gap-3">
-        <div className={`h-11 w-11 rounded-2xl flex items-center justify-center ${ring}`}>{icon}</div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-muted-foreground">{label}</p>
-          <p className="text-2xl font-bold leading-tight">{value}</p>
-        </div>
-        <HalfMoonGauge value={value} total={total} stroke={stroke} />
+      <div className="flex items-baseline justify-between mb-3">
+        <h2 className="text-sm font-semibold flex items-center gap-2">
+          <Wrench className="h-4 w-4 text-muted-foreground" />
+          Manutenções
+        </h2>
+        <span className="text-[11px] text-muted-foreground tabular-nums">{total} no total</span>
       </div>
-      <p className="text-xs text-muted-foreground mt-2 truncate">{hint}</p>
-    </Link>
-  );
-}
 
-function HalfMoonGauge({ value, total, stroke }: { value: number; total: number; stroke: string }) {
-  const ratio = total > 0 ? Math.min(1, value / total) : 0;
-  const pct = Math.round(ratio * 100);
-  // Semicircle: radius 30, stroke 7, viewBox 76x42
-  const r = 30;
-  const cx = 38;
-  const cy = 36;
-  const circumference = Math.PI * r; // half circle length
-  const dash = circumference * ratio;
-  return (
-    <div className="relative shrink-0" style={{ width: 76, height: 44 }} aria-label={`${value} de ${total}`}>
-      <svg width={76} height={44} viewBox="0 0 76 44">
-        <path
-          d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
-          fill="none"
-          stroke="hsl(var(--muted))"
-          strokeWidth={7}
-          strokeLinecap="round"
-        />
-        <path
-          d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
-          fill="none"
-          stroke={stroke}
-          strokeWidth={7}
-          strokeLinecap="round"
-          strokeDasharray={`${dash} ${circumference}`}
-          style={{ transition: "stroke-dasharray 400ms ease" }}
-        />
-      </svg>
-      <span className="absolute inset-x-0 bottom-0 text-center text-[10px] font-semibold tabular-nums text-muted-foreground">
-        {pct}%
-      </span>
-    </div>
+      {total === 0 ? (
+        <p className="text-xs text-muted-foreground py-4 text-center">Nenhuma manutenção cadastrada.</p>
+      ) : (
+        <div className="flex items-center gap-4">
+          <div className="relative shrink-0" style={{ width: size, height: size }} aria-label="Distribuição de manutenções por status">
+            <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
+              <circle cx={cx} cy={cy} r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth={stroke} />
+              {arcs.map((a) => a.value > 0 && (
+                <circle
+                  key={a.key}
+                  cx={cx} cy={cy} r={r}
+                  fill="none"
+                  stroke={a.color}
+                  strokeWidth={stroke}
+                  strokeDasharray={a.dasharray}
+                  strokeDashoffset={a.dashoffset}
+                  strokeLinecap="butt"
+                  style={{ transition: "stroke-dasharray 400ms ease" }}
+                />
+              ))}
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className={`text-2xl font-bold tabular-nums leading-none ${headline.tone}`}>{headline.value}</span>
+              <span className="text-[10px] text-muted-foreground mt-1">{headline.label}</span>
+            </div>
+          </div>
+
+          <ul className="flex-1 min-w-0 space-y-1.5">
+            {segments.map((s) => {
+              const pct = total > 0 ? Math.round((s.value / total) * 100) : 0;
+              return (
+                <li key={s.key} className="flex items-center gap-2 text-xs">
+                  <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: s.color }} />
+                  <span className="flex-1 min-w-0 truncate text-muted-foreground">{s.label}</span>
+                  <span className="font-semibold tabular-nums">{s.value}</span>
+                  <span className="text-muted-foreground tabular-nums w-9 text-right">{pct}%</span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </Link>
   );
 }
 
