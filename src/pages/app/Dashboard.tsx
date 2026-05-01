@@ -83,69 +83,110 @@ export default function Dashboard() {
   );
 }
 
-function SummaryCard({ to, icon, label, value, total, hint, tone }: {
-  to: string; icon: React.ReactNode; label: string; value: number; total: number; hint: string;
-  tone: "success" | "warning" | "danger";
-}) {
-  const ring =
-    tone === "danger" ? "bg-destructive/10 text-destructive" :
-    tone === "warning" ? "bg-warning/15 text-warning" :
-    "bg-success/15 text-success";
-  const stroke =
-    tone === "danger" ? "hsl(var(--destructive))" :
-    tone === "warning" ? "hsl(var(--warning))" :
-    "hsl(var(--success))";
+function MaintenanceDonutCard({ items }: { items: any[] }) {
+  const buckets = useMemo(() => {
+    let overdue = 0, soon = 0, ok = 0, done = 0;
+    items.forEach((m) => {
+      if (m.completed) { done++; return; }
+      const d = daysUntil(m.next_due_date);
+      if (d < 0) overdue++;
+      else if (d < 7) soon++;
+      else ok++;
+    });
+    return { overdue, soon, ok, done };
+  }, [items]);
+
+  const total = items.length;
+  const segments = [
+    { key: "overdue", label: "Atrasadas", value: buckets.overdue, color: "hsl(var(--destructive))" },
+    { key: "soon", label: "Próximas (7 dias)", value: buckets.soon, color: "hsl(var(--warning))" },
+    { key: "ok", label: "Em dia", value: buckets.ok, color: "hsl(var(--primary))" },
+    { key: "done", label: "Concluídas", value: buckets.done, color: "hsl(var(--success))" },
+  ];
+
+  // Donut math
+  const size = 132;
+  const stroke = 14;
+  const r = (size - stroke) / 2;
+  const cx = size / 2;
+  const cy = size / 2;
+  const C = 2 * Math.PI * r;
+
+  let offset = 0;
+  const arcs = segments.map((s) => {
+    const frac = total > 0 ? s.value / total : 0;
+    const dash = frac * C;
+    const arc = {
+      ...s,
+      dasharray: `${dash} ${C - dash}`,
+      dashoffset: -offset,
+    };
+    offset += dash;
+    return arc;
+  });
+
+  const headline = buckets.overdue > 0
+    ? { label: "Atrasadas", value: buckets.overdue, tone: "text-destructive" }
+    : buckets.soon > 0
+    ? { label: "Próximas", value: buckets.soon, tone: "text-warning" }
+    : { label: "Em dia", value: buckets.ok, tone: "text-success" };
+
   return (
     <Link
-      to={to}
-      className="snap-center shrink-0 w-full bg-card border border-border/60 rounded-2xl p-4 shadow-card active:scale-[0.99] transition-transform"
+      to="/maintenance"
+      className="block bg-card border border-border/60 rounded-[22px] p-4 shadow-card active:scale-[0.99] transition-transform"
     >
-      <div className="flex items-center gap-3">
-        <div className={`h-11 w-11 rounded-2xl flex items-center justify-center ${ring}`}>{icon}</div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-muted-foreground">{label}</p>
-          <p className="text-2xl font-bold leading-tight">{value}</p>
-        </div>
-        <HalfMoonGauge value={value} total={total} stroke={stroke} />
+      <div className="flex items-baseline justify-between mb-3">
+        <h2 className="text-sm font-semibold flex items-center gap-2">
+          <Wrench className="h-4 w-4 text-muted-foreground" />
+          Manutenções
+        </h2>
+        <span className="text-[11px] text-muted-foreground tabular-nums">{total} no total</span>
       </div>
-      <p className="text-xs text-muted-foreground mt-2 truncate">{hint}</p>
-    </Link>
-  );
-}
 
-function HalfMoonGauge({ value, total, stroke }: { value: number; total: number; stroke: string }) {
-  const ratio = total > 0 ? Math.min(1, value / total) : 0;
-  const pct = Math.round(ratio * 100);
-  // Semicircle: radius 30, stroke 7, viewBox 76x42
-  const r = 30;
-  const cx = 38;
-  const cy = 36;
-  const circumference = Math.PI * r; // half circle length
-  const dash = circumference * ratio;
-  return (
-    <div className="relative shrink-0" style={{ width: 76, height: 44 }} aria-label={`${value} de ${total}`}>
-      <svg width={76} height={44} viewBox="0 0 76 44">
-        <path
-          d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
-          fill="none"
-          stroke="hsl(var(--muted))"
-          strokeWidth={7}
-          strokeLinecap="round"
-        />
-        <path
-          d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
-          fill="none"
-          stroke={stroke}
-          strokeWidth={7}
-          strokeLinecap="round"
-          strokeDasharray={`${dash} ${circumference}`}
-          style={{ transition: "stroke-dasharray 400ms ease" }}
-        />
-      </svg>
-      <span className="absolute inset-x-0 bottom-0 text-center text-[10px] font-semibold tabular-nums text-muted-foreground">
-        {pct}%
-      </span>
-    </div>
+      {total === 0 ? (
+        <p className="text-xs text-muted-foreground py-4 text-center">Nenhuma manutenção cadastrada.</p>
+      ) : (
+        <div className="flex items-center gap-4">
+          <div className="relative shrink-0" style={{ width: size, height: size }} aria-label="Distribuição de manutenções por status">
+            <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
+              <circle cx={cx} cy={cy} r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth={stroke} />
+              {arcs.map((a) => a.value > 0 && (
+                <circle
+                  key={a.key}
+                  cx={cx} cy={cy} r={r}
+                  fill="none"
+                  stroke={a.color}
+                  strokeWidth={stroke}
+                  strokeDasharray={a.dasharray}
+                  strokeDashoffset={a.dashoffset}
+                  strokeLinecap="butt"
+                  style={{ transition: "stroke-dasharray 400ms ease" }}
+                />
+              ))}
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className={`text-2xl font-bold tabular-nums leading-none ${headline.tone}`}>{headline.value}</span>
+              <span className="text-[10px] text-muted-foreground mt-1">{headline.label}</span>
+            </div>
+          </div>
+
+          <ul className="flex-1 min-w-0 space-y-1.5">
+            {segments.map((s) => {
+              const pct = total > 0 ? Math.round((s.value / total) * 100) : 0;
+              return (
+                <li key={s.key} className="flex items-center gap-2 text-xs">
+                  <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: s.color }} />
+                  <span className="flex-1 min-w-0 truncate text-muted-foreground">{s.label}</span>
+                  <span className="font-semibold tabular-nums">{s.value}</span>
+                  <span className="text-muted-foreground tabular-nums w-9 text-right">{pct}%</span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </Link>
   );
 }
 
