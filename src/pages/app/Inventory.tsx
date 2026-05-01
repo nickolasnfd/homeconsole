@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTable } from "@/hooks/useTable";
 import { formatDate } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +32,24 @@ export default function Inventory() {
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
+
+  const [openCategories, setOpenCategories] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = localStorage.getItem("inventory:openCategories");
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("inventory:openCategories", JSON.stringify(openCategories));
+    } catch {
+      // ignore
+    }
+  }, [openCategories]);
 
   const shoppingList = data.filter((i: any) => Number(i.current_qty) < Number(i.min_threshold));
 
@@ -172,12 +190,13 @@ export default function Inventory() {
             return a.cat.localeCompare(b.cat, "pt-BR");
           });
 
-        const defaultOpen = sortedGroups
-          .filter((g) => g.lowCount > 0)
-          .map((g) => g.cat);
-
         return (
-          <Accordion type="multiple" defaultValue={defaultOpen} className="space-y-2">
+          <Accordion
+            type="multiple"
+            value={openCategories}
+            onValueChange={setOpenCategories}
+            className="space-y-2"
+          >
             {sortedGroups.map(({ cat, items, lowCount }) => (
               <AccordionItem
                 key={cat}
