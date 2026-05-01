@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTable } from "@/hooks/useTable";
 import { daysUntil, formatCurrency, formatDate } from "@/lib/format";
 import { AlertTriangle, Package, Wallet, Wrench } from "lucide-react";
@@ -33,6 +33,23 @@ export default function Dashboard() {
     return Array.from(map, ([month, total]) => ({ month, total }));
   }, [finances.data]);
 
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const [activeCard, setActiveCard] = useState(0);
+  const totalCards = 3;
+
+  const handleCarouselScroll = () => {
+    const el = carouselRef.current;
+    if (!el) return;
+    const index = Math.round(el.scrollLeft / el.clientWidth);
+    if (index !== activeCard) setActiveCard(index);
+  };
+
+  const goToCard = (index: number) => {
+    const el = carouselRef.current;
+    if (!el) return;
+    el.scrollTo({ left: index * el.clientWidth, behavior: "smooth" });
+  };
+
   return (
     <div className="space-y-5">
       <Section title="Despesas mensais" subtitle="Últimos 6 meses">
@@ -64,7 +81,11 @@ export default function Dashboard() {
         lowCount={lowStock.length}
       />
 
-      <div className="overflow-x-auto snap-x snap-mandatory scrollbar-none">
+      <div
+        ref={carouselRef}
+        onScroll={handleCarouselScroll}
+        className="overflow-x-auto snap-x snap-mandatory scrollbar-none"
+      >
         <div className="flex gap-4 pb-1">
           <SummaryCard
             to="/maintenance"
@@ -94,6 +115,22 @@ export default function Dashboard() {
             tone={lowStock.length ? "warning" : "success"}
           />
         </div>
+      </div>
+
+      <div className="flex justify-center gap-1.5 -mt-2" role="tablist" aria-label="Indicadores do carrossel">
+        {Array.from({ length: totalCards }).map((_, i) => (
+          <button
+            key={i}
+            type="button"
+            role="tab"
+            aria-selected={activeCard === i}
+            aria-label={`Ir para cartão ${i + 1}`}
+            onClick={() => goToCard(i)}
+            className={`h-1.5 rounded-full transition-all ${
+              activeCard === i ? "w-5 bg-primary" : "w-1.5 bg-muted-foreground/30"
+            }`}
+          />
+        ))}
       </div>
 
       {criticalMaint.length > 0 && (
