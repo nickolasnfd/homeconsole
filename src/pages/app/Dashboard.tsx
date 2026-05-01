@@ -85,22 +85,21 @@ export default function Dashboard() {
 
 function MaintenanceDonutCard({ items }: { items: any[] }) {
   const buckets = useMemo(() => {
-    let overdue = 0, soon = 0, ok = 0, done = 0;
+    let overdue = 0, soon = 0, done = 0;
     items.forEach((m) => {
       if (m.completed) { done++; return; }
       const d = daysUntil(m.next_due_date);
       if (d < 0) overdue++;
       else if (d < 7) soon++;
-      else ok++;
+      else done++;
     });
-    return { overdue, soon, ok, done };
+    return { overdue, soon, done };
   }, [items]);
 
   const total = items.length;
   const segments = [
     { key: "overdue", label: "Atrasadas", value: buckets.overdue, color: "hsl(var(--destructive))" },
     { key: "soon", label: "Próximas (7 dias)", value: buckets.soon, color: "hsl(var(--warning))" },
-    { key: "ok", label: "Em dia", value: buckets.ok, color: "hsl(var(--primary))" },
     { key: "done", label: "Concluídas", value: buckets.done, color: "hsl(var(--success))" },
   ];
 
@@ -129,7 +128,7 @@ function MaintenanceDonutCard({ items }: { items: any[] }) {
     ? { label: "Atrasadas", value: buckets.overdue, tone: "text-destructive" }
     : buckets.soon > 0
     ? { label: "Próximas", value: buckets.soon, tone: "text-warning" }
-    : { label: "Em dia", value: buckets.ok, tone: "text-success" };
+    : { label: "Concluídas", value: buckets.done, tone: "text-success" };
 
   return (
     <Link
