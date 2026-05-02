@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useTable } from "@/hooks/useTable";
 import { daysUntil, formatCurrency, formatDate } from "@/lib/format";
-import { AlertTriangle, Wrench } from "lucide-react";
+import { AlertTriangle, Wrench, Package, Receipt } from "lucide-react";
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
@@ -14,6 +14,18 @@ export default function Dashboard() {
 
   const lowStock = (inventory.data ?? []).filter((i) => Number(i.current_qty) < Number(i.min_threshold));
   const criticalMaint = (maintenance.data ?? []).filter((m) => daysUntil(m.next_due_date) < 7);
+  const overdueMaint = (maintenance.data ?? []).filter((m) => !m.completed && daysUntil(m.next_due_date) < 0);
+  const today = new Date();
+  const pendingThisMonth = (finances.data ?? []).filter((f) => {
+    if (f.status !== "pending") return false;
+    const d = new Date(f.due_date);
+    return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth();
+  });
+  const alerts = [
+    overdueMaint.length > 0 && { to: "/maintenance", icon: Wrench, tone: "destructive" as const, label: `${overdueMaint.length} manutenç${overdueMaint.length === 1 ? "ão atrasada" : "ões atrasadas"}` },
+    lowStock.length > 0 && { to: "/inventory", icon: Package, tone: "warning" as const, label: `${lowStock.length} ${lowStock.length === 1 ? "item em falta" : "itens em falta"}` },
+    pendingThisMonth.length > 0 && { to: "/finance", icon: Receipt, tone: "primary" as const, label: `${pendingThisMonth.length} ${pendingThisMonth.length === 1 ? "conta pendente" : "contas pendentes"} este mês` },
+  ].filter(Boolean) as { to: string; icon: any; tone: "destructive" | "warning" | "primary"; label: string }[];
 
   const monthly = useMemo(() => {
     const map = new Map<string, number>();
@@ -33,6 +45,25 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-5">
+      {alerts.length > 0 && (
+        <div className="space-y-2">
+          {alerts.map((a, i) => {
+            const Icon = a.icon;
+            const toneCls =
+              a.tone === "destructive" ? "bg-destructive/10 text-destructive border-destructive/30"
+              : a.tone === "warning" ? "bg-warning/15 text-warning border-warning/30"
+              : "bg-primary/10 text-primary border-primary/30";
+            return (
+              <Link key={i} to={a.to} className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 ${toneCls} active:scale-[0.99] transition-transform`}>
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="text-sm font-semibold flex-1 min-w-0 truncate">{a.label}</span>
+                <span className="text-xs opacity-70">Ver →</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
       <Section title="Despesas mensais" subtitle="Últimos 6 meses">
         <div className="h-48 -mx-2">
           <ResponsiveContainer width="100%" height="100%">

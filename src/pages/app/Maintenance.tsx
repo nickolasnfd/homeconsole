@@ -8,11 +8,13 @@ import { toast } from "sonner";
 import { AddItemButton } from "@/components/AddItemButton";
 import { MaintenanceForm } from "@/components/forms/MaintenanceForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export default function Maintenance() {
   const { data = [], isLoading } = useTable<any>("maintenance", { column: "next_due_date" });
   const qc = useQueryClient();
   const [editing, setEditing] = useState<any | null>(null);
+  const [filter, setFilter] = useState<"all" | "overdue" | "soon" | "ok" | "done">("all");
 
   async function complete(m: any) {
     const today = todayISO();
@@ -70,10 +72,33 @@ export default function Maintenance() {
     </div>
   );
 
+  const bucket = (m: any): "overdue" | "soon" | "ok" | "done" => {
+    const isOneTime = m.task_type === "one_time";
+    if (isOneTime && m.completed) return "done";
+    const d = daysUntil(m.next_due_date);
+    if (d < 0) return "overdue";
+    if (d < 7) return "soon";
+    return "ok";
+  };
+  const counts = { overdue: 0, soon: 0, ok: 0, done: 0 } as Record<string, number>;
+  data.forEach((m) => { counts[bucket(m)]++; });
+  const visible = filter === "all" ? data : data.filter((m) => bucket(m) === filter);
+
   return (
     <div className="space-y-3">
       {addButton}
-      {data.map((m) => {
+      <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
+        <TabsList className="grid grid-cols-5 w-full h-auto">
+          <TabsTrigger value="all" className="text-[11px] px-1">Todas<span className="ml-1 opacity-60">{data.length}</span></TabsTrigger>
+          <TabsTrigger value="overdue" className="text-[11px] px-1 data-[state=active]:text-destructive">Atrasadas<span className="ml-1 opacity-60">{counts.overdue}</span></TabsTrigger>
+          <TabsTrigger value="soon" className="text-[11px] px-1 data-[state=active]:text-warning">7 dias<span className="ml-1 opacity-60">{counts.soon}</span></TabsTrigger>
+          <TabsTrigger value="ok" className="text-[11px] px-1">Em dia<span className="ml-1 opacity-60">{counts.ok}</span></TabsTrigger>
+          <TabsTrigger value="done" className="text-[11px] px-1">Feitas<span className="ml-1 opacity-60">{counts.done}</span></TabsTrigger>
+        </TabsList>
+        <TabsContent value={filter} className="space-y-3 mt-3">
+      {visible.length === 0 ? (
+        <p className="text-center text-sm text-muted-foreground py-8">Nenhuma tarefa neste filtro.</p>
+      ) : visible.map((m) => {
         const isOneTime = m.task_type === "one_time";
         const isDone = isOneTime && m.completed;
         const days = daysUntil(m.next_due_date);
@@ -128,6 +153,8 @@ export default function Maintenance() {
           </div>
         );
       })}
+        </TabsContent>
+      </Tabs>
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent className="max-w-md rounded-3xl bg-card border-border/60">
           <DialogHeader>
