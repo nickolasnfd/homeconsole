@@ -9,11 +9,13 @@ import { toast } from "sonner";
 import { AddItemButton } from "@/components/AddItemButton";
 import { FinanceForm } from "@/components/forms/FinanceForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export default function Finance() {
   const { data = [], isLoading } = useTable<any>("finances", { column: "due_date" });
   const qc = useQueryClient();
   const [editing, setEditing] = useState<any | null>(null);
+  const [filter, setFilter] = useState<"current" | "next" | "all">("current");
 
   // Janela do mês atual e do próximo mês
   const now = new Date();
@@ -87,6 +89,11 @@ export default function Finance() {
   const nextMonthItems = [...nextMonthExisting, ...projectedRecurring];
   const nextMonthTotal = nextMonthItems.reduce((s, f) => s + Number(f.amount || 0), 0);
   const nextMonthLabel = nextMonthDate.toLocaleDateString("pt-BR", { month: "long" });
+
+  const visibleItems =
+    filter === "current" ? currentMonthItems
+    : filter === "next" ? nextMonthItems
+    : data;
 
   async function toggle(f: any) {
     const next = f.status === "paid" ? "pending" : "paid";
@@ -223,18 +230,27 @@ export default function Finance() {
           <p className="text-sm text-muted-foreground mt-1">Toque em + para registrar uma conta ou despesa.</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {data.map((f) => (
+        <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
+          <TabsList className="grid grid-cols-3 w-full">
+            <TabsTrigger value="current">Este mês</TabsTrigger>
+            <TabsTrigger value="next" className="capitalize">{nextMonthLabel}</TabsTrigger>
+            <TabsTrigger value="all">Todas</TabsTrigger>
+          </TabsList>
+          <TabsContent value={filter} className="space-y-2 mt-3">
+          {visibleItems.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground py-8">Nenhuma despesa neste período.</p>
+          ) : visibleItems.map((f) => (
             <div
-              key={f.id}
+              key={`${f.id}-${f._projected ? "p" : "r"}`}
               role="button"
               tabIndex={0}
-              onClick={() => setEditing(f)}
-              onKeyDown={(e) => { if (e.key === "Enter") setEditing(f); }}
-              className="bg-card border border-border/60 rounded-2xl p-4 shadow-card flex items-center gap-3 cursor-pointer active:scale-[0.997] transition-transform"
+              onClick={() => !f._projected && setEditing(f)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !f._projected) setEditing(f); }}
+              className={`bg-card border border-border/60 rounded-2xl p-4 shadow-card flex items-center gap-3 transition-transform ${f._projected ? "opacity-70 border-dashed" : "cursor-pointer active:scale-[0.997]"}`}
             >
               <button
-                onClick={(e) => { e.stopPropagation(); toggle(f); }}
+                onClick={(e) => { e.stopPropagation(); if (!f._projected) toggle(f); }}
+                disabled={f._projected}
                 className={`h-10 w-10 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${
                   f.status === "paid" ? "bg-success/15 text-success" : "bg-destructive/10 text-destructive"
                 }`}
@@ -242,7 +258,12 @@ export default function Finance() {
                 {f.status === "paid" ? "✓" : "!"}
               </button>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold truncate">{f.description}</p>
+                <p className="font-semibold truncate flex items-center gap-1.5">
+                  {f.description}
+                  {f._projected && (
+                    <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-primary/15 text-primary">Estimada</span>
+                  )}
+                </p>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <span>{f.category} • {formatDate(f.due_date)}</span>
                   {f.frequency_value ? (
@@ -252,13 +273,16 @@ export default function Finance() {
               </div>
               <div className="text-right">
                 <p className="font-bold tabular-nums">{formatCurrency(Number(f.amount))}</p>
-                <button onClick={(e) => { e.stopPropagation(); remove(f.id); }} className="text-muted-foreground hover:text-destructive mt-1">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                {!f._projected && (
+                  <button onClick={(e) => { e.stopPropagation(); remove(f.id); }} className="text-muted-foreground hover:text-destructive mt-1">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
             </div>
           ))}
-        </div>
+          </TabsContent>
+        </Tabs>
       )}
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent className="max-w-md rounded-3xl bg-card border-border/60">
