@@ -3,7 +3,7 @@ import { useTable } from "@/hooks/useTable";
 import { formatDate } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { Trash2, Plus, Minus, AlertTriangle, ShoppingCart, CalendarClock, Search, Copy } from "lucide-react";
+import { Trash2, Plus, Minus, AlertTriangle, ShoppingCart, CalendarClock, Search, Copy, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import { AddItemButton } from "@/components/AddItemButton";
 import { InventoryForm } from "@/components/forms/InventoryForm";
@@ -63,6 +63,84 @@ export default function Inventory() {
       toast.success("Lista copiada para a área de transferência");
     } catch {
       toast.error("Não foi possível copiar a lista");
+    }
+  }
+
+  async function downloadShoppingListPDF() {
+    if (shoppingList.length === 0) return;
+    try {
+      const { default: jsPDF } = await import("jspdf");
+      const doc = new jsPDF({ unit: "pt", format: "a4" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const marginX = 48;
+      let y = 64;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(20);
+      doc.text("Lista de Compras", marginX, y);
+
+      y += 22;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(120);
+      const today = new Date().toLocaleDateString("pt-BR", {
+        day: "2-digit", month: "long", year: "numeric",
+      });
+      doc.text(`Gerado em ${today} · ${shoppingList.length} ${shoppingList.length === 1 ? "item" : "itens"}`, marginX, y);
+
+      y += 24;
+      doc.setDrawColor(220);
+      doc.line(marginX, y, pageWidth - marginX, y);
+      y += 20;
+
+      // Agrupar por categoria
+      const groups = new Map<string, any[]>();
+      for (const it of shoppingList) {
+        const cat = (it.category ?? "").trim() || "Sem categoria";
+        if (!groups.has(cat)) groups.set(cat, []);
+        groups.get(cat)!.push(it);
+      }
+      const sorted = Array.from(groups.entries()).sort((a, b) =>
+        a[0].localeCompare(b[0], "pt-BR")
+      );
+
+      const ensureSpace = (needed: number) => {
+        if (y + needed > pageHeight - 48) {
+          doc.addPage();
+          y = 64;
+        }
+      };
+
+      for (const [cat, items] of sorted) {
+        ensureSpace(40);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(60);
+        doc.text(cat.toUpperCase(), marginX, y);
+        y += 16;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(12);
+        doc.setTextColor(30);
+        for (const it of items.sort((a, b) =>
+          String(a.name).localeCompare(String(b.name), "pt-BR")
+        )) {
+          ensureSpace(22);
+          // checkbox
+          doc.setDrawColor(160);
+          doc.rect(marginX, y - 10, 12, 12);
+          doc.text(String(it.name), marginX + 22, y);
+          y += 22;
+        }
+        y += 8;
+      }
+
+      const filename = `lista-de-compras-${new Date().toISOString().slice(0, 10)}.pdf`;
+      doc.save(filename);
+      toast.success("PDF gerado com sucesso");
+    } catch (err) {
+      toast.error("Não foi possível gerar o PDF");
     }
   }
 
@@ -342,6 +420,15 @@ export default function Inventory() {
                 >
                   <Copy className="h-4 w-4 mr-2" />
                   Copiar lista
+                </Button>
+                <Button
+                  onClick={downloadShoppingListPDF}
+                  variant="outline"
+                  className="w-full mt-2 rounded-xl"
+                  size="lg"
+                >
+                  <FileDown className="h-4 w-4 mr-2" />
+                  Baixar PDF
                 </Button>
               </>
             )}
