@@ -8,7 +8,7 @@ const tabs = [
   { to: "/maintenance", label: "Tarefas", icon: Wrench },
   { to: "/", label: "Início", icon: Home, end: true, center: true },
   { to: "/finance", label: "Finanças", icon: Wallet },
-  { to: "/settings", label: "Ajustes", icon: Settings, disabled: true },
+  { to: "/settings", label: "Ajustes", icon: Settings },
 ];
 
 const titles: Record<string, { title: string; subtitle: string }> = {
@@ -16,6 +16,7 @@ const titles: Record<string, { title: string; subtitle: string }> = {
   "/inventory": { title: "Estoque", subtitle: "Acompanhe itens e suprimentos" },
   "/maintenance": { title: "Manutenção", subtitle: "Antecipe os cuidados da casa" },
   "/finance": { title: "Finanças", subtitle: "Contas e despesas" },
+  "/settings": { title: "Ajustes", subtitle: "Gerencie sua conta" },
 };
 
 export function AppShell({ children }: { children: ReactNode }) {
