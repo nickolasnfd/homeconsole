@@ -236,9 +236,9 @@ export default function Finance() {
             <TabsTrigger value="next" className="capitalize">{nextMonthLabel}</TabsTrigger>
             <TabsTrigger value="all">Todas</TabsTrigger>
           </TabsList>
-          <TabsContent value={filter} className="space-y-2 mt-3">
+          <TabsContent value={filter} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
           {visibleItems.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">Nenhuma despesa neste período.</p>
+            <p className="text-center text-sm text-muted-foreground py-8 sm:col-span-2 lg:col-span-3">Nenhuma despesa neste período.</p>
           ) : visibleItems.map((f) => (
             <div
               key={`${f.id}-${f._projected ? "p" : "r"}`}

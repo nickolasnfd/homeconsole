@@ -1,16 +1,19 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTable } from "@/hooks/useTable";
 import { daysUntil, formatCurrency, formatDate } from "@/lib/format";
-import { AlertTriangle, Wrench, Package, Receipt } from "lucide-react";
+import { AlertTriangle, Wrench, Package, Receipt, MessageSquare, Send } from "lucide-react";
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { Link } from "react-router-dom";
+import { sendTelegramMessage } from "@/lib/telegram";
+import { toast } from "sonner";
 
 export default function Dashboard() {
   const inventory = useTable<any>("inventory", { column: "name" });
   const maintenance = useTable<any>("maintenance", { column: "next_due_date" });
   const finances = useTable<any>("finances", { column: "due_date" });
+  const [sendingReport, setSendingReport] = useState(false);
 
   const lowStock = (inventory.data ?? []).filter((i) => Number(i.current_qty) < Number(i.min_threshold));
   const criticalMaint = (maintenance.data ?? []).filter((m) => daysUntil(m.next_due_date) < 7);
@@ -43,6 +46,55 @@ export default function Dashboard() {
     return Array.from(map, ([month, total]) => ({ month, total }));
   }, [finances.data]);
 
+  const handleSendTelegramReport = async () => {
+    setSendingReport(true);
+    try {
+      let text = `🏠 *CENTRAL RESIDENCIAL - STATUS GERAL*\n\n`;
+
+      // 1. Finance Section
+      if (pendingThisMonth.length > 0) {
+        text += `🚨 *Finanças (Contas Pendentes):*\n`;
+        pendingThisMonth.forEach((f) => {
+          text += `• ${f.description}: _${formatCurrency(f.amount)}_ (Vence: ${formatDate(f.due_date)})\n`;
+        });
+        text += `\n`;
+      } else {
+        text += `🟢 *Finanças:* Todas as contas do mês estão pagas!\n\n`;
+      }
+
+      // 2. Inventory Section
+      if (lowStock.length > 0) {
+        text += `📦 *Estoque (Itens em Falta):*\n`;
+        lowStock.forEach((i) => {
+          text += `• ${i.name}: falta ${Number(i.min_threshold) - Number(i.current_qty)} ${i.unit} (Mín: ${i.min_threshold})\n`;
+        });
+        text += `\n`;
+      } else {
+        text += `🟢 *Estoque:* Nível de suprimentos saudável!\n\n`;
+      }
+
+      // 3. Maintenance Section
+      const pendingTasks = (maintenance.data ?? []).filter((m) => !m.completed);
+      if (pendingTasks.length > 0) {
+        text += `🔧 *Manutenção (Tarefas Pendentes):*\n`;
+        pendingTasks.forEach((m) => {
+          const days = daysUntil(m.next_due_date);
+          const statusText = days < 0 ? `🚨 ${Math.abs(days)}d atrasada` : days === 0 ? `⚠️ vence hoje` : `📅 em ${days}d`;
+          text += `• ${m.title}: _${statusText}_\n`;
+        });
+      } else {
+        text += `🟢 *Manutenção:* Nenhuma tarefa pendente!\n`;
+      }
+
+      await sendTelegramMessage(text);
+      toast.success("Relatório de status enviado para o Telegram!");
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao enviar relatório para o Telegram.");
+    } finally {
+      setSendingReport(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
       {alerts.length > 0 && (
@@ -64,52 +116,81 @@ export default function Dashboard() {
         </div>
       )}
 
-      <Section title="Despesas mensais" subtitle="Últimos 6 meses">
-        <div className="h-48 -mx-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={monthly} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="cyanFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.5} />
-                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-              <XAxis dataKey="month" tickLine={false} axisLine={false} fontSize={11} stroke="hsl(var(--muted-foreground))" />
-              <YAxis tickLine={false} axisLine={false} fontSize={11} stroke="hsl(var(--muted-foreground))" width={32} />
-              <Tooltip
-                cursor={{ fill: "hsl(var(--muted))" }}
-                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12 }}
-                formatter={(v: number) => formatCurrency(v)}
-              />
-              <Area type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#cyanFill)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </Section>
-
-      <StockHealthCard
-        total={(inventory.data ?? []).length}
-        lowCount={lowStock.length}
-      />
-
-      <MaintenanceDonutCard items={maintenance.data ?? []} />
-
-      {criticalMaint.length > 0 && (
-        <Section title="Tarefas próximas" subtitle="Próximos 7 dias">
-          <div className="space-y-2">
-            {criticalMaint.slice(0, 3).map((m) => (
-              <div key={m.id} className="flex items-center justify-between bg-card rounded-2xl p-3 shadow-card">
-                <div>
-                  <p className="font-semibold text-sm">{m.title}</p>
-                  <p className="text-xs text-muted-foreground">Vence {formatDate(m.next_due_date)}</p>
-                </div>
-                <AlertTriangle className="h-4 w-4 text-destructive" />
-              </div>
-            ))}
+      {/* Relatório Telegram Quick Action */}
+      <div className="flex items-center justify-between gap-3 bg-card/40 backdrop-blur-md border border-border/60 rounded-[22px] p-4 shadow-card">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-full bg-sky-500/10 text-sky-400 flex items-center justify-center shrink-0">
+            <MessageSquare className="h-4 w-4" strokeWidth={2.2} />
           </div>
-        </Section>
-      )}
+          <div>
+            <p className="text-xs font-bold text-foreground">Relatório Telegram</p>
+            <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Envie o status residencial consolidado para seu celular</p>
+          </div>
+        </div>
+        <button
+          onClick={handleSendTelegramReport}
+          disabled={sendingReport}
+          className="h-8 px-3.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors active:scale-95 disabled:opacity-50 cursor-pointer shadow-sm"
+        >
+          <Send className="h-3.5 w-3.5" />
+          {sendingReport ? "Enviando..." : "Enviar"}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="md:col-span-2">
+          <Section title="Despesas mensais" subtitle="Últimos 6 meses">
+            <div className="h-48 -mx-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={monthly} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="cyanFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.5} />
+                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                  <XAxis dataKey="month" tickLine={false} axisLine={false} fontSize={11} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis tickLine={false} axisLine={false} fontSize={11} stroke="hsl(var(--muted-foreground))" width={32} />
+                  <Tooltip
+                    cursor={{ fill: "hsl(var(--muted))" }}
+                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12 }}
+                    formatter={(v: number) => formatCurrency(v)}
+                  />
+                  <Area type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#cyanFill)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </Section>
+        </div>
+
+        <div className="space-y-5">
+          <StockHealthCard
+            total={(inventory.data ?? []).length}
+            lowCount={lowStock.length}
+          />
+
+          {criticalMaint.length > 0 && (
+            <Section title="Tarefas próximas" subtitle="Próximos 7 dias">
+              <div className="space-y-2">
+                {criticalMaint.slice(0, 3).map((m) => (
+                  <div key={m.id} className="flex items-center justify-between bg-card rounded-2xl p-3 shadow-card">
+                    <div>
+                      <p className="font-semibold text-sm">{m.title}</p>
+                      <p className="text-xs text-muted-foreground">Vence {formatDate(m.next_due_date)}</p>
+                    </div>
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )}
+        </div>
+
+        <div className="space-y-5">
+          <MaintenanceDonutCard items={maintenance.data ?? []} />
+        </div>
+      </div>
     </div>
   );
 }

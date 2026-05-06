@@ -95,9 +95,9 @@ export default function Maintenance() {
           <TabsTrigger value="ok" className="text-[11px] px-1">Em dia<span className="ml-1 opacity-60">{counts.ok}</span></TabsTrigger>
           <TabsTrigger value="done" className="text-[11px] px-1">Feitas<span className="ml-1 opacity-60">{counts.done}</span></TabsTrigger>
         </TabsList>
-        <TabsContent value={filter} className="space-y-3 mt-3">
+        <TabsContent value={filter} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
       {visible.length === 0 ? (
-        <p className="text-center text-sm text-muted-foreground py-8">Nenhuma tarefa neste filtro.</p>
+        <p className="text-center text-sm text-muted-foreground py-8 sm:col-span-2 lg:col-span-3">Nenhuma tarefa neste filtro.</p>
       ) : visible.map((m) => {
         const isOneTime = m.task_type === "one_time";
         const isDone = isOneTime && m.completed;

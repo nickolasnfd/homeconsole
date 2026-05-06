@@ -299,7 +299,7 @@ export default function Inventory() {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="pb-3">
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {items.map((i) => {
         const low = Number(i.current_qty) < Number(i.min_threshold);
         const need = low ? Math.max(0, Number(i.min_threshold) - Number(i.current_qty)) : 0;
