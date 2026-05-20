@@ -1,8 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error("MISSING ENV: VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is undefined. Check your .env file.");
+}
+
+const SUPABASE_URL = supabaseUrl;
+const SUPABASE_PUBLISHABLE_KEY = supabaseKey;
 
 // Detecta se as variáveis de ambiente são ausentes ou valores dummy
 const isDummy = 

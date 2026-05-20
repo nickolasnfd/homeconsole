@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTable } from "@/hooks/useTable";
-import { daysUntil, formatCurrency, formatDate } from "@/lib/format";
+import { daysUntil, formatCurrency, formatDate, parseLocalDate } from "@/lib/format";
 import { AlertTriangle, Wrench, Package, Receipt, MessageSquare, Send } from "lucide-react";
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -21,7 +21,7 @@ export default function Dashboard() {
   const today = new Date();
   const pendingThisMonth = (finances.data ?? []).filter((f) => {
     if (f.status !== "pending") return false;
-    const d = new Date(f.due_date);
+    const d = parseLocalDate(f.due_date);
     return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth();
   });
   const alerts = [
@@ -39,7 +39,7 @@ export default function Dashboard() {
       map.set(key, 0);
     }
     (finances.data ?? []).forEach((f) => {
-      const d = new Date(f.due_date);
+      const d = parseLocalDate(f.due_date);
       const key = d.toLocaleDateString("pt-BR", { month: "short" });
       if (map.has(key)) map.set(key, (map.get(key) || 0) + Number(f.amount || 0));
     });

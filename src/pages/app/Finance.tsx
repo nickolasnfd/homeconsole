@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTable } from "@/hooks/useTable";
-import { formatCurrency, formatDate, addFrequencyISO, todayISO } from "@/lib/format";
+import { formatCurrency, formatDate, addFrequencyISO, todayISO, parseLocalDate } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Trash2, Repeat, CalendarClock } from "lucide-react";
@@ -27,7 +27,7 @@ export default function Finance() {
 
   const inMonth = (iso: string | null | undefined, y: number, m: number) => {
     if (!iso) return false;
-    const d = new Date(iso);
+    const d = parseLocalDate(iso);
     return d.getFullYear() === y && d.getMonth() === m;
   };
 
@@ -68,14 +68,14 @@ export default function Finance() {
     let projectedDue = f.due_date;
     let safety = 0;
     while (
-      new Date(projectedDue) < nextMonthDate ||
+      parseLocalDate(projectedDue) < nextMonthDate ||
       !inMonth(projectedDue, nextYear, nextMonth)
     ) {
       const advanced = addFrequencyISO(projectedDue, amount, unit);
       if (advanced === projectedDue) break;
       projectedDue = advanced;
       // Se passamos do próximo mês sem cair nele, paramos
-      const d = new Date(projectedDue);
+      const d = parseLocalDate(projectedDue);
       if (d.getFullYear() > nextYear || (d.getFullYear() === nextYear && d.getMonth() > nextMonth)) {
         break;
       }
