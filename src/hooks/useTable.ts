@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-type TableName = "inventory" | "maintenance" | "finances";
+type TableName = "inventory" | "maintenance";
 
 export function useTable<T = any>(table: TableName, orderBy?: { column: string; ascending?: boolean }) {
   return useQuery({

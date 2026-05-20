@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { Package, Wrench, Wallet, Home, Settings, Maximize2, Minimize2, LogOut } from "lucide-react";
+import { Package, Wrench, Home, Settings, Maximize2, Minimize2, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/integrations/supabase/AuthProvider";
 import { WeatherWidget } from "./WeatherWidget";
@@ -17,7 +17,6 @@ const tabs = [
   { to: "/inventory", label: "Estoque", icon: Package },
   { to: "/maintenance", label: "Tarefas", icon: Wrench },
   { to: "/", label: "Início", icon: Home, end: true },
-  { to: "/finance", label: "Finanças", icon: Wallet },
   { to: "/settings", label: "Ajustes", icon: Settings },
 ];
 
@@ -25,7 +24,6 @@ const titles: Record<string, { title: string; subtitle: string }> = {
   "/": { title: "Central de Comando", subtitle: "Sua casa em um relance" },
   "/inventory": { title: "Estoque", subtitle: "Acompanhe itens e suprimentos" },
   "/maintenance": { title: "Manutenção", subtitle: "Antecipe os cuidados da casa" },
-  "/finance": { title: "Finanças", subtitle: "Contas e despesas" },
   "/settings": { title: "Ajustes", subtitle: "Gerencie sua conta" },
 };
 

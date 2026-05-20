@@ -12,7 +12,6 @@ import Auth from "@/pages/app/Auth";
 import Dashboard from "@/pages/app/Dashboard";
 import Inventory from "@/pages/app/Inventory";
 import Maintenance from "@/pages/app/Maintenance";
-import Finance from "@/pages/app/Finance";
 import Settings from "@/pages/app/Settings";
 
 const queryClient = new QueryClient();
@@ -41,7 +40,6 @@ const App = () => (
                       <Route path="/" element={<Dashboard />} />
                       <Route path="/inventory" element={<Inventory />} />
                       <Route path="/maintenance" element={<Maintenance />} />
-                      <Route path="/finance" element={<Finance />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>

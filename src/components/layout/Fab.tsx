@@ -6,7 +6,6 @@ import {
 } from "@/components/ui/dialog";
 import { InventoryForm } from "@/components/forms/InventoryForm";
 import { MaintenanceForm } from "@/components/forms/MaintenanceForm";
-import { FinanceForm } from "@/components/forms/FinanceForm";
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/ui/tabs";
@@ -18,8 +17,7 @@ export function Fab() {
   const defaultTab =
     pathname.startsWith("/inventory") ? "inventory" :
     pathname.startsWith("/maintenance") ? "maintenance" :
-    pathname.startsWith("/finance") ? "finance" :
-    "finance";
+    "inventory";
 
   const close = () => setOpen(false);
 
@@ -38,12 +36,10 @@ export function Fab() {
           <DialogTitle>Adicionar rápido</DialogTitle>
         </DialogHeader>
         <Tabs defaultValue={defaultTab} className="w-full">
-          <TabsList className="grid grid-cols-3 w-full">
-            <TabsTrigger value="finance">Despesa</TabsTrigger>
+          <TabsList className="grid grid-cols-2 w-full">
             <TabsTrigger value="maintenance">Tarefa</TabsTrigger>
             <TabsTrigger value="inventory">Item</TabsTrigger>
           </TabsList>
-          <TabsContent value="finance" className="mt-4"><FinanceForm onDone={close} /></TabsContent>
           <TabsContent value="maintenance" className="mt-4"><MaintenanceForm onDone={close} /></TabsContent>
           <TabsContent value="inventory" className="mt-4"><InventoryForm onDone={close} /></TabsContent>
         </Tabs>

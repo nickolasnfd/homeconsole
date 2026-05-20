@@ -1,10 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTable } from "@/hooks/useTable";
-import { daysUntil, formatCurrency, formatDate, parseLocalDate } from "@/lib/format";
-import { AlertTriangle, Wrench, Package, Receipt, MessageSquare, Send } from "lucide-react";
-import {
-  Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
-} from "recharts";
+import { daysUntil, formatDate } from "@/lib/format";
+import { AlertTriangle, Wrench, Package, MessageSquare, Send } from "lucide-react";
 import { Link } from "react-router-dom";
 import { sendTelegramMessage } from "@/lib/telegram";
 import { toast } from "sonner";
@@ -12,57 +9,22 @@ import { toast } from "sonner";
 export default function Dashboard() {
   const inventory = useTable<any>("inventory", { column: "name" });
   const maintenance = useTable<any>("maintenance", { column: "next_due_date" });
-  const finances = useTable<any>("finances", { column: "due_date" });
   const [sendingReport, setSendingReport] = useState(false);
 
   const lowStock = (inventory.data ?? []).filter((i) => Number(i.current_qty) < Number(i.min_threshold));
   const criticalMaint = (maintenance.data ?? []).filter((m) => daysUntil(m.next_due_date) < 7);
   const overdueMaint = (maintenance.data ?? []).filter((m) => !m.completed && daysUntil(m.next_due_date) < 0);
-  const today = new Date();
-  const pendingThisMonth = (finances.data ?? []).filter((f) => {
-    if (f.status !== "pending") return false;
-    const d = parseLocalDate(f.due_date);
-    return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth();
-  });
   const alerts = [
     overdueMaint.length > 0 && { to: "/maintenance", icon: Wrench, tone: "destructive" as const, label: `${overdueMaint.length} manutenç${overdueMaint.length === 1 ? "ão atrasada" : "ões atrasadas"}` },
     lowStock.length > 0 && { to: "/inventory", icon: Package, tone: "warning" as const, label: `${lowStock.length} ${lowStock.length === 1 ? "item em falta" : "itens em falta"}` },
-    pendingThisMonth.length > 0 && { to: "/finance", icon: Receipt, tone: "primary" as const, label: `${pendingThisMonth.length} ${pendingThisMonth.length === 1 ? "conta pendente" : "contas pendentes"} este mês` },
   ].filter(Boolean) as { to: string; icon: any; tone: "destructive" | "warning" | "primary"; label: string }[];
-
-  const monthly = useMemo(() => {
-    const map = new Map<string, number>();
-    const now = new Date();
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = d.toLocaleDateString("pt-BR", { month: "short" });
-      map.set(key, 0);
-    }
-    (finances.data ?? []).forEach((f) => {
-      const d = parseLocalDate(f.due_date);
-      const key = d.toLocaleDateString("pt-BR", { month: "short" });
-      if (map.has(key)) map.set(key, (map.get(key) || 0) + Number(f.amount || 0));
-    });
-    return Array.from(map, ([month, total]) => ({ month, total }));
-  }, [finances.data]);
 
   const handleSendTelegramReport = async () => {
     setSendingReport(true);
     try {
       let text = `🏠 *CENTRAL RESIDENCIAL - STATUS GERAL*\n\n`;
 
-      // 1. Finance Section
-      if (pendingThisMonth.length > 0) {
-        text += `🚨 *Finanças (Contas Pendentes):*\n`;
-        pendingThisMonth.forEach((f) => {
-          text += `• ${f.description}: _${formatCurrency(f.amount)}_ (Vence: ${formatDate(f.due_date)})\n`;
-        });
-        text += `\n`;
-      } else {
-        text += `🟢 *Finanças:* Todas as contas do mês estão pagas!\n\n`;
-      }
-
-      // 2. Inventory Section
+      // 1. Inventory Section
       if (lowStock.length > 0) {
         text += `📦 *Estoque (Itens em Falta):*\n`;
         lowStock.forEach((i) => {
@@ -73,7 +35,7 @@ export default function Dashboard() {
         text += `🟢 *Estoque:* Nível de suprimentos saudável!\n\n`;
       }
 
-      // 3. Maintenance Section
+      // 2. Maintenance Section
       const pendingTasks = (maintenance.data ?? []).filter((m) => !m.completed);
       if (pendingTasks.length > 0) {
         text += `🔧 *Manutenção (Tarefas Pendentes):*\n`;
@@ -138,32 +100,6 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div className="md:col-span-2">
-          <Section title="Despesas mensais" subtitle="Últimos 6 meses">
-            <div className="h-48 -mx-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={monthly} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="cyanFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.5} />
-                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                  <XAxis dataKey="month" tickLine={false} axisLine={false} fontSize={11} stroke="hsl(var(--muted-foreground))" />
-                  <YAxis tickLine={false} axisLine={false} fontSize={11} stroke="hsl(var(--muted-foreground))" width={32} />
-                  <Tooltip
-                    cursor={{ fill: "hsl(var(--muted))" }}
-                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12 }}
-                    formatter={(v: number) => formatCurrency(v)}
-                  />
-                  <Area type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#cyanFill)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </Section>
-        </div>
-
         <div className="space-y-5">
           <StockHealthCard
             total={(inventory.data ?? []).length}
