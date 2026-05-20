@@ -1,43 +1,41 @@
-export interface TelegramConfig {
-  token: string;
-  chatId: string;
-}
-
-export function getTelegramConfig(): TelegramConfig {
-  if (typeof window === "undefined") return { token: "", chatId: "" };
-  return {
-    token: localStorage.getItem("telegram_bot_token") || "",
-    chatId: localStorage.getItem("telegram_chat_id") || "",
-  };
-}
-
-export function saveTelegramConfig(token: string, chatId: string) {
-  localStorage.setItem("telegram_bot_token", token.trim());
-  localStorage.setItem("telegram_chat_id", chatId.trim());
-}
+import { supabase } from "@/integrations/supabase/client";
 
 export async function sendTelegramMessage(text: string): Promise<boolean> {
-  const { token, chatId } = getTelegramConfig();
-  if (!token || !chatId) {
-    throw new Error("Configurações do Telegram não preenchidas nos Ajustes.");
+  // Obter o chat_id cadastrado para o household no Supabase
+  const { data, error } = await supabase
+    .from('telegram_authorized_chats')
+    .select('chat_id')
+    .limit(1);
+
+  if (error || !data || data.length === 0) {
+    throw new Error("Nenhum Chat ID do Telegram configurado nos Ajustes.");
   }
 
-  // Sanitize Markdown links and formatting if needed, but simple markdown works
-  const url = `https://api.telegram.org/bot${token}/sendMessage`;
-  const res = await fetch(url, {
+  const chatId = data[0].chat_id;
+  return sendTelegramMessageToChat(chatId, text);
+}
+
+export async function sendTelegramMessageToChat(chatId: string, text: string): Promise<boolean> {
+  const res = await fetch("/api/send-message", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: text,
-      parse_mode: "Markdown",
-    }),
+    body: JSON.stringify({ chatId, text }),
   });
 
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.description || "Erro na API do Telegram.");
+    throw new Error(errData.error || "Erro ao enviar mensagem via proxy.");
   }
 
   return true;
 }
+
+// Stubs para compatibilidade com o front-end temporária (serão removidos/ajustados)
+export function getTelegramConfig() {
+  return { token: "Configurado no Servidor", chatId: "" };
+}
+
+export function saveTelegramConfig(token: string, chatId: string) {
+  // O token não é mais salvo no cliente. O chat_id será gerenciado diretamente via Supabase em Settings.tsx
+}
+

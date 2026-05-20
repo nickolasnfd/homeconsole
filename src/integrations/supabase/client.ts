@@ -52,25 +52,32 @@ class MockQueryBuilder {
 
     if (tableName === 'inventory') {
       return [
-        { id: 'i1', name: 'Arroz Integral', current_qty: 2, min_threshold: 5, unit: 'kg', category: 'Alimentos', expires_at: addDays(45), created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-        { id: 'i2', name: 'Leite Integral', current_qty: 12, min_threshold: 6, unit: 'L', category: 'Alimentos', expires_at: addDays(5), created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-        { id: 'i3', name: 'Detergente Líquido', current_qty: 0, min_threshold: 2, unit: 'un', category: 'Limpeza', expires_at: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-        { id: 'i4', name: 'Creme Dental', current_qty: 1, min_threshold: 3, unit: 'un', category: 'Higiene', expires_at: addDays(60), created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
+        { id: 'i1', name: 'Arroz Integral', current_qty: 2, min_threshold: 5, unit: 'kg', category: 'Alimentos', expires_at: addDays(45), household_id: '00000000-0000-0000-0000-000000000001', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+        { id: 'i2', name: 'Leite Integral', current_qty: 12, min_threshold: 6, unit: 'L', category: 'Alimentos', expires_at: addDays(5), household_id: '00000000-0000-0000-0000-000000000001', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+        { id: 'i3', name: 'Detergente Líquido', current_qty: 0, min_threshold: 2, unit: 'un', category: 'Limpeza', expires_at: null, household_id: '00000000-0000-0000-0000-000000000001', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+        { id: 'i4', name: 'Creme Dental', current_qty: 1, min_threshold: 3, unit: 'un', category: 'Higiene', expires_at: addDays(60), household_id: '00000000-0000-0000-0000-000000000001', created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
       ];
     }
     if (tableName === 'maintenance') {
       return [
-        { id: 'm1', title: 'Limpar ar-condicionado', description: 'Higienizar filtros e verificar gás da unidade do quarto principal', frequency_days: 180, frequency_unit: 'days', last_performed_date: addDays(-175), next_due_date: addDays(5), priority_level: 'medium', completed: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-        { id: 'm2', title: 'Lavar a garagem', description: 'Lavar o piso e remover manchas de óleo da garagem', frequency_days: 30, frequency_unit: 'days', last_performed_date: addDays(-32), next_due_date: addDays(-2), priority_level: 'low', completed: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-        { id: 'm3', title: 'Dedetização anual', description: 'Contratar serviço para dedetização geral contra insetos', frequency_days: 365, frequency_unit: 'days', last_performed_date: addDays(-320), next_due_date: addDays(45), priority_level: 'high', completed: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
+        { id: 'm1', title: 'Limpar ar-condicionado', description: 'Higienizar filtros e verificar gás da unidade do quarto principal', frequency_days: 180, frequency_unit: 'days', last_performed_date: addDays(-175), next_due_date: addDays(5), priority_level: 'medium', completed: false, household_id: '00000000-0000-0000-0000-000000000001', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+        { id: 'm2', title: 'Lavar a garagem', description: 'Lavar o piso e remover manchas de óleo da garagem', frequency_days: 30, frequency_unit: 'days', last_performed_date: addDays(-32), next_due_date: addDays(-2), priority_level: 'low', completed: false, household_id: '00000000-0000-0000-0000-000000000001', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+        { id: 'm3', title: 'Dedetização anual', description: 'Contratar serviço para dedetização geral contra insetos', frequency_days: 365, frequency_unit: 'days', last_performed_date: addDays(-320), next_due_date: addDays(45), priority_level: 'high', completed: false, household_id: '00000000-0000-0000-0000-000000000001', created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
       ];
     }
-    if (tableName === 'finances') {
+    if (tableName === 'households') {
       return [
-        { id: 'f1', description: 'Conta de Energia', amount: 250.50, due_date: addDays(10), status: 'pending', category: 'Contas', frequency_value: 1, frequency_unit: 'months', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-        { id: 'f2', description: 'Condomínio', amount: 450.00, due_date: addDays(5), status: 'pending', category: 'Contas', frequency_value: 1, frequency_unit: 'months', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-        { id: 'f3', description: 'Supermercado Mensal', amount: 820.40, due_date: addDays(-3), status: 'paid', category: 'Alimentação', frequency_value: null, frequency_unit: 'days', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-        { id: 'f4', description: 'Internet Fibra', amount: 120.00, due_date: addDays(15), status: 'pending', category: 'Internet', frequency_value: 1, frequency_unit: 'months', created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
+        { id: '00000000-0000-0000-0000-000000000001', name: 'Nossa Casa', created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
+      ];
+    }
+    if (tableName === 'profiles') {
+      return [
+        { id: 'user-mock-123', household_id: '00000000-0000-0000-0000-000000000001', updated_at: new Date().toISOString() }
+      ];
+    }
+    if (tableName === 'telegram_authorized_chats') {
+      return [
+        { chat_id: '987654321', household_id: '00000000-0000-0000-0000-000000000001', user_id: 'user-mock-123', user_name: 'Nickolas', created_at: new Date().toISOString() }
       ];
     }
     return [];
