@@ -11,13 +11,17 @@ if (!supabaseUrl || !supabaseKey) {
 const SUPABASE_URL = supabaseUrl;
 const SUPABASE_PUBLISHABLE_KEY = supabaseKey;
 
-// Detecta se as variáveis de ambiente são ausentes ou valores dummy
+// Detecta se as variáveis de ambiente são ausentes ou valores placeholder de template
 const isDummy = 
   !SUPABASE_URL || 
   !SUPABASE_PUBLISHABLE_KEY || 
-  SUPABASE_URL.includes('dummy') || 
-  SUPABASE_PUBLISHABLE_KEY.includes('dummy') ||
-  SUPABASE_URL === 'https://cgjejxggkbunlklkhtno.supabase.co'; // ID padrão do Lovable que virá vazio para o usuário
+  SUPABASE_URL.includes('placeholder') || 
+  SUPABASE_URL.includes('example') || 
+  SUPABASE_URL.includes('your-project') || 
+  SUPABASE_PUBLISHABLE_KEY.includes('placeholder') || 
+  SUPABASE_PUBLISHABLE_KEY.includes('example') || 
+  SUPABASE_PUBLISHABLE_KEY.includes('your-project') ||
+  SUPABASE_PUBLISHABLE_KEY.includes('dummy-signature');
 
 // Mock Database em LocalStorage
 class MockQueryBuilder {

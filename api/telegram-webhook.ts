@@ -97,7 +97,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const match = inventory?.find(it => normalize(it.name) === normalizedSearch);
 
       if (match) {
-        // Atualizar existente
+        // O comando "+" intencionalmente zera current_qty para sinalizar "faltando",
+        // independente da quantidade anterior. Não é incremento — é marcação de falta.
         const nextMin = Number(match.min_threshold) === 0 ? 1 : Number(match.min_threshold);
         await supabase
           .from('inventory')
