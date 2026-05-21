@@ -226,7 +226,124 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await sendTelegramMessage(chatId, `❌ Nenhuma tarefa pendente contendo *"${taskTitle}"* foi encontrada.`);
       }
     }
-    // 5. Comando: ? ou status
+    // 5. Comando: del: <item>
+    else if (normalize(text).startsWith('del:')) {
+      const itemName = text.slice(text.indexOf(':') + 1).trim();
+      if (!itemName) {
+        await sendTelegramMessage(chatId, "⚠️ Por favor, digite o nome do item. Ex: `del: arroz`");
+        return res.status(200).send('OK');
+      }
+
+      const { data: inventory, error } = await supabase
+        .from('inventory')
+        .select('*')
+        .eq('household_id', householdId);
+
+      if (error) throw error;
+
+      const normalizedSearch = normalize(itemName);
+      const match = inventory?.find(it => normalize(it.name) === normalizedSearch);
+
+      if (match) {
+        const { error: deleteError } = await supabase
+          .from('inventory')
+          .delete()
+          .eq('id', match.id);
+
+        if (deleteError) throw deleteError;
+
+        await sendTelegramMessage(chatId, `🗑️ ${match.name} removido do estoque.`);
+      } else {
+        await sendTelegramMessage(chatId, "❌ Nenhum item encontrado com esse nome.");
+      }
+    }
+    // 6. Comando: lista
+    else if (normalize(text) === 'lista') {
+      const { data: inventory, error } = await supabase
+        .from('inventory')
+        .select('*')
+        .eq('household_id', householdId);
+
+      if (error) throw error;
+
+      const missingItems = (inventory || []).filter(i => Number(i.current_qty) < Number(i.min_threshold));
+
+      if (missingItems.length === 0) {
+        await sendTelegramMessage(chatId, "✅ Nenhum item faltando no momento.");
+      } else {
+        const groups: Record<string, typeof missingItems> = {};
+        for (const item of missingItems) {
+          const cat = (item.category || 'Geral').trim();
+          const catKey = cat.toUpperCase();
+          if (!groups[catKey]) {
+            groups[catKey] = [];
+          }
+          groups[catKey].push(item);
+        }
+
+        const getCategoryEmoji = (category: string) => {
+          const norm = normalize(category);
+          if (norm.includes('aliment')) return '🍎';
+          if (norm.includes('higiene')) return '🧴';
+          if (norm.includes('limpeza')) return '🧹';
+          if (norm.includes('pet')) return '🐱';
+          return '📦';
+        };
+
+        let responseText = `🛒 *Lista de compras*\n`;
+        for (const [category, items] of Object.entries(groups)) {
+          const emoji = getCategoryEmoji(category);
+          responseText += `\n${emoji} *${category}*\n`;
+          responseText += items.map(i => `• ${i.name}`).join('\n') + '\n';
+        }
+
+        await sendTelegramMessage(chatId, responseText.trim());
+      }
+    }
+    // 7. Comando: comprei: <item> <quantidade>
+    else if (normalize(text).startsWith('comprei:')) {
+      const argString = text.slice(text.indexOf(':') + 1).trim();
+      const lastSpaceIdx = argString.lastIndexOf(' ');
+      
+      if (lastSpaceIdx === -1) {
+        await sendTelegramMessage(chatId, "❌ Use o formato: comprei: arroz 2");
+        return res.status(200).send('OK');
+      }
+
+      const itemName = argString.slice(0, lastSpaceIdx).trim();
+      const qtyStr = argString.slice(lastSpaceIdx + 1).trim();
+      const qty = Number(qtyStr);
+
+      if (!itemName || isNaN(qty) || qty < 0) {
+        await sendTelegramMessage(chatId, "❌ Use o formato: comprei: arroz 2");
+        return res.status(200).send('OK');
+      }
+
+      const { data: inventory, error } = await supabase
+        .from('inventory')
+        .select('*')
+        .eq('household_id', householdId);
+
+      if (error) throw error;
+
+      const normalizedSearch = normalize(itemName);
+      const match = inventory?.find(it => normalize(it.name) === normalizedSearch);
+
+      if (match) {
+        const nextMin = Number(match.min_threshold) > qty ? qty : Number(match.min_threshold);
+        const { error: updateError } = await supabase
+          .from('inventory')
+          .update({ current_qty: qty, min_threshold: nextMin })
+          .eq('id', match.id);
+
+        if (updateError) throw updateError;
+
+        await sendTelegramMessage(chatId, `✅ ${match.name} atualizado: ${qty} unidades em estoque.`);
+      } else {
+        await sendTelegramMessage(chatId, "❌ Nenhum item encontrado com esse nome.");
+      }
+    }
+    // 8. Comando: ? ou status
     else if (text === '?' || normalize(text) === 'status') {
       const { data: inventory } = await supabase.from('inventory').select('*').eq('household_id', householdId);
       const { data: tasks } = await supabase.from('maintenance').select('*').eq('household_id', householdId).eq('completed', false);
@@ -254,12 +371,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       await sendTelegramMessage(chatId, responseText);
     }
-    // 6. Mensagem de Ajuda padrão
+    // 9. Mensagem de Ajuda padrão
     else {
       const helpText = `Olá, *${userName}*!\n\n` +
         `Comandos disponíveis:\n` +
         `• \`+ <item>\` : Adiciona ou marca item como FALTANDO no estoque.\n` +
         `• \`- <item>\` : Marca item como COMPRADO/OK.\n` +
+        `• \`del: <item>\` : Remove permanentemente um item do estoque.\n` +
+        `• \`lista\` : Lista todos os itens em falta agrupados por categoria.\n` +
+        `• \`comprei: <item> <quantidade>\` : Atualiza a quantidade do item e marca como comprado.\n` +
         `• \`tarefa: <texto>\` : Cria uma tarefa de manutenção rápida.\n` +
         `• \`feito: <texto>\` : Conclui uma tarefa rápida ou recorrente.\n` +
         `• \`?\` ou \`status\` : Exibe itens em falta e tarefas atrasadas.`;
