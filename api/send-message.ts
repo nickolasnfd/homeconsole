@@ -23,14 +23,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     auth: { persistSession: false }
   });
 
+  // Sanitizar o Chat ID para conter apenas números e sinal de menos (para grupos)
+  const cleanChatId = String(chatId).replace(/[^0-9-]/g, '');
+
+  if (!cleanChatId) {
+    return res.status(400).json({ error: 'Invalid Chat ID format' });
+  }
+
   // Validar se o chat_id está cadastrado/autorizado
   const { data: authChat, error: authError } = await supabase
     .from('telegram_authorized_chats')
     .select('chat_id')
-    .eq('chat_id', String(chatId))
-    .single();
+    .eq('chat_id', cleanChatId)
+    .limit(1)
+    .maybeSingle();
 
-  if (authError || !authChat) {
+  if (authError) {
+    console.error('Database error in send-message validation:', authError);
+    return res.status(500).json({ error: 'Database verification failed', details: authError.message });
+  }
+
+  if (!authChat) {
     return res.status(403).json({ error: 'Unauthorized chat ID' });
   }
 
@@ -45,7 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        chat_id: chatId,
+        chat_id: cleanChatId,
         text: text,
         parse_mode: "Markdown",
       }),

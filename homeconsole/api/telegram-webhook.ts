@@ -66,7 +66,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .from('telegram_authorized_chats')
     .select('household_id, user_name')
     .eq('chat_id', chatId)
-    .single();
+    .limit(1)
+    .maybeSingle();
 
   if (authError) {
     console.error(`Erro ao consultar chat_id no banco:`, authError);

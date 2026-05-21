@@ -53,11 +53,23 @@ export default function Settings() {
         .eq('id', user.id)
         .single();
 
-      if (profileError || !profile || !profile.household_id) {
+      if (profileError) {
+        console.error("Supabase Error ao buscar profile:", profileError);
+        throw new Error(`Erro do banco: ${profileError.message || JSON.stringify(profileError)}`);
+      }
+      
+      if (!profile || !profile.household_id) {
         throw new Error("Usuário não associado a uma residência (household).");
       }
 
       const householdId = profile.household_id;
+
+      // Sanitizar o Chat ID para conter apenas números e sinal de menos (para grupos)
+      const cleanChatId = chatId.replace(/[^0-9-]/g, '');
+
+      if (!cleanChatId) {
+        throw new Error("Chat ID inválido. Deve conter apenas números.");
+      }
 
       // 2. Deletar chat_id antigo associado a este usuário para evitar órfãos
       await supabase
@@ -65,11 +77,17 @@ export default function Settings() {
         .delete()
         .eq('user_id', user.id);
 
+      // Limpar também qualquer registro que já tenha este chat_id (ex: fix manual com user_id nulo)
+      await supabase
+        .from('telegram_authorized_chats')
+        .delete()
+        .eq('chat_id', cleanChatId);
+
       // 3. Inserir o novo chat_id
       const { error: insertError } = await supabase
         .from('telegram_authorized_chats')
         .insert({
-          chat_id: chatId.trim(),
+          chat_id: cleanChatId,
           household_id: householdId,
           user_id: user.id,
           user_name: user.email?.split('@')[0] || 'Usuário'
@@ -77,6 +95,7 @@ export default function Settings() {
 
       if (insertError) throw insertError;
 
+      setChatId(cleanChatId);
       toast.success("Chat ID do Telegram salvo com sucesso!");
       return true;
     } catch (err: any) {
@@ -88,7 +107,8 @@ export default function Settings() {
   };
 
   const handleTest = async () => {
-    if (!chatId.trim()) {
+    const cleanChatId = chatId.replace(/[^0-9-]/g, '');
+    if (!cleanChatId) {
       toast.error("Preencha o Chat ID antes de testar.");
       return;
     }
@@ -99,7 +119,7 @@ export default function Settings() {
       if (!saved) return;
 
       const testText = `🏠 *CENTRAL RESIDENCIAL*\n\n🟢 *Conexão bem sucedida!*\nSeu bot está configurado corretamente e pronto para enviar relatórios da sua casa.`;
-      await sendTelegramMessageToChat(chatId.trim(), testText);
+      await sendTelegramMessageToChat(cleanChatId, testText);
       toast.success("Mensagem de teste enviada para o Telegram!");
     } catch (err: any) {
       toast.error(err.message || "Falha ao enviar mensagem de teste.");

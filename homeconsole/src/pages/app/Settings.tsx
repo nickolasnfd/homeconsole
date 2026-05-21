@@ -95,6 +95,7 @@ export default function Settings() {
 
       if (insertError) throw insertError;
 
+      setChatId(cleanChatId);
       toast.success("Chat ID do Telegram salvo com sucesso!");
       return true;
     } catch (err: any) {
@@ -106,7 +107,8 @@ export default function Settings() {
   };
 
   const handleTest = async () => {
-    if (!chatId.trim()) {
+    const cleanChatId = chatId.replace(/[^0-9-]/g, '');
+    if (!cleanChatId) {
       toast.error("Preencha o Chat ID antes de testar.");
       return;
     }
@@ -117,7 +119,7 @@ export default function Settings() {
       if (!saved) return;
 
       const testText = `🏠 *CENTRAL RESIDENCIAL*\n\n🟢 *Conexão bem sucedida!*\nSeu bot está configurado corretamente e pronto para enviar relatórios da sua casa.`;
-      await sendTelegramMessageToChat(chatId.trim(), testText);
+      await sendTelegramMessageToChat(cleanChatId, testText);
       toast.success("Mensagem de teste enviada para o Telegram!");
     } catch (err: any) {
       toast.error(err.message || "Falha ao enviar mensagem de teste.");

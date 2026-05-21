@@ -40,13 +40,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const { message } = req.body || {};
-  if (!message || !message.chat || !message.text) {
+  const msg = req.body?.message || req.body?.edited_message;
+  if (!msg || !msg.chat || !msg.text) {
     return res.status(200).send('OK (no message)');
   }
 
-  const chatId = String(message.chat.id);
-  const text = message.text.trim();
+  const chatId = String(msg.chat.id);
+  const text = msg.text.trim();
 
   const supabaseUrl = process.env.VITE_SUPABASE_URL;
   const supabaseServiceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -66,9 +66,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .from('telegram_authorized_chats')
     .select('household_id, user_name')
     .eq('chat_id', chatId)
-    .single();
+    .limit(1)
+    .maybeSingle();
 
-  if (authError || !authChat) {
+  if (authError) {
+    console.error(`Erro ao consultar chat_id no banco:`, authError);
+    return res.status(500).json({ error: 'Database query failed', details: authError.message });
+  }
+
+  if (!authChat) {
     console.warn(`Unauthorized chat_id: ${chatId}. Message ignored.`);
     return res.status(200).send('OK (unauthorized)');
   }

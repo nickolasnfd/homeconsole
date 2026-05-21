@@ -7,6 +7,13 @@ vi.mock('@supabase/supabase-js', () => {
     const builder = {
       select: () => builder,
       eq: () => builder,
+      limit: () => builder,
+      maybeSingle: () => {
+        if (table === 'telegram_authorized_chats') {
+          return Promise.resolve({ data: { household_id: 'house-123', user_name: 'Nickolas' }, error: null });
+        }
+        return Promise.resolve({ data: null, error: null });
+      },
       single: () => {
         if (table === 'telegram_authorized_chats') {
           return Promise.resolve({ data: { household_id: 'house-123', user_name: 'Nickolas' }, error: null });
@@ -50,6 +57,13 @@ describe('Telegram Webhook Serverless Function', () => {
       const builder = {
         select: () => builder,
         eq: () => builder,
+        limit: () => builder,
+        maybeSingle: () => {
+          if (table === 'telegram_authorized_chats') {
+            return Promise.resolve({ data: null, error: null });
+          }
+          return Promise.resolve({ data: null, error: null });
+        },
         single: () => {
           if (table === 'telegram_authorized_chats') {
             return Promise.resolve({ data: null, error: new Error('Unauthorized') });
@@ -95,6 +109,13 @@ describe('Telegram Webhook Serverless Function', () => {
       const builder = {
         select: () => builder,
         eq: () => builder,
+        limit: () => builder,
+        maybeSingle: () => {
+          if (table === 'telegram_authorized_chats') {
+            return Promise.resolve({ data: { household_id: 'house-123', user_name: 'Nickolas' }, error: null });
+          }
+          return Promise.resolve({ data: null, error: null });
+        },
         single: () => {
           if (table === 'telegram_authorized_chats') {
             return Promise.resolve({ data: { household_id: 'house-123', user_name: 'Nickolas' }, error: null });
@@ -147,6 +168,13 @@ describe('Telegram Webhook Serverless Function', () => {
       const builder = {
         select: () => builder,
         eq: (...args: any[]) => builder,
+        limit: () => builder,
+        maybeSingle: () => {
+          if (table === 'telegram_authorized_chats') {
+            return Promise.resolve({ data: { household_id: 'house-123', user_name: 'Nickolas' }, error: null });
+          }
+          return Promise.resolve({ data: null, error: null });
+        },
         single: () => {
           if (table === 'telegram_authorized_chats') {
             return Promise.resolve({ data: { household_id: 'house-123', user_name: 'Nickolas' }, error: null });
@@ -211,6 +239,13 @@ describe('Telegram Webhook Serverless Function', () => {
       const builder = {
         select: () => builder,
         eq: (...args: any[]) => builder,
+        limit: () => builder,
+        maybeSingle: () => {
+          if (table === 'telegram_authorized_chats') {
+            return Promise.resolve({ data: { household_id: 'house-123', user_name: 'Nickolas' }, error: null });
+          }
+          return Promise.resolve({ data: null, error: null });
+        },
         single: () => {
           if (table === 'telegram_authorized_chats') {
             return Promise.resolve({ data: { household_id: 'house-123', user_name: 'Nickolas' }, error: null });
@@ -274,6 +309,13 @@ describe('Telegram Webhook Serverless Function', () => {
       const builder = {
         select: () => builder,
         eq: (...args: any[]) => builder,
+        limit: () => builder,
+        maybeSingle: () => {
+          if (table === 'telegram_authorized_chats') {
+            return Promise.resolve({ data: { household_id: 'house-123', user_name: 'Nickolas' }, error: null });
+          }
+          return Promise.resolve({ data: null, error: null });
+        },
         single: () => {
           if (table === 'telegram_authorized_chats') {
             return Promise.resolve({ data: { household_id: 'house-123', user_name: 'Nickolas' }, error: null });
