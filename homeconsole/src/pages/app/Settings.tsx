@@ -53,7 +53,12 @@ export default function Settings() {
         .eq('id', user.id)
         .single();
 
-      if (profileError || !profile || !profile.household_id) {
+      if (profileError) {
+        console.error("Supabase Error ao buscar profile:", profileError);
+        throw new Error(`Erro do banco: ${profileError.message || JSON.stringify(profileError)}`);
+      }
+      
+      if (!profile || !profile.household_id) {
         throw new Error("Usuário não associado a uma residência (household).");
       }
 
