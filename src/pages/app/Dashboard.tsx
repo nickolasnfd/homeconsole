@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTable } from "@/hooks/useTable";
 import { daysUntil, formatDate } from "@/lib/format";
-import { AlertTriangle, Wrench, Package, MessageSquare, Send } from "lucide-react";
+import { AlertTriangle, Wrench, Package, MessageSquare, Send, ChevronRight, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { sendTelegramMessage } from "@/lib/telegram";
 import { toast } from "sonner";
@@ -12,8 +12,10 @@ export default function Dashboard() {
   const [sendingReport, setSendingReport] = useState(false);
 
   const lowStock = (inventory.data ?? []).filter((i) => Number(i.current_qty) < Number(i.min_threshold));
-  const criticalMaint = (maintenance.data ?? []).filter((m) => daysUntil(m.next_due_date) < 7);
+  const criticalMaint = (maintenance.data ?? []).filter((m) => !m.completed && daysUntil(m.next_due_date) < 7);
   const overdueMaint = (maintenance.data ?? []).filter((m) => !m.completed && daysUntil(m.next_due_date) < 0);
+  const okMaint = (maintenance.data ?? []).filter((m) => !m.completed && daysUntil(m.next_due_date) >= 7);
+
   const alerts = [
     overdueMaint.length > 0 && { to: "/maintenance", icon: Wrench, tone: "destructive" as const, label: `${overdueMaint.length} manutenç${overdueMaint.length === 1 ? "ão atrasada" : "ões atrasadas"}` },
     lowStock.length > 0 && { to: "/inventory", icon: Package, tone: "warning" as const, label: `${lowStock.length} ${lowStock.length === 1 ? "item em falta" : "itens em falta"}` },
@@ -24,7 +26,6 @@ export default function Dashboard() {
     try {
       let text = `🏠 *CENTRAL RESIDENCIAL - STATUS GERAL*\n\n`;
 
-      // 1. Inventory Section
       if (lowStock.length > 0) {
         text += `📦 *Estoque (Itens em Falta):*\n`;
         lowStock.forEach((i) => {
@@ -35,7 +36,6 @@ export default function Dashboard() {
         text += `🟢 *Estoque:* Nível de suprimentos saudável!\n\n`;
       }
 
-      // 2. Maintenance Section
       const pendingTasks = (maintenance.data ?? []).filter((m) => !m.completed);
       if (pendingTasks.length > 0) {
         text += `🔧 *Manutenção (Tarefas Pendentes):*\n`;
@@ -58,41 +58,58 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 animate-fade-up">
+      {/* Hero Metrics Row */}
+      <HeroMetrics
+        lowStock={lowStock.length}
+        overdue={overdueMaint.length}
+        critical={criticalMaint.length}
+        ok={okMaint.length}
+      />
+
+      {/* Alerts */}
       {alerts.length > 0 && (
         <div className="space-y-2">
           {alerts.map((a, i) => {
             const Icon = a.icon;
             const toneCls =
-              a.tone === "destructive" ? "bg-destructive/10 text-destructive border-destructive/30"
-              : a.tone === "warning" ? "bg-warning/15 text-warning border-warning/30"
-              : "bg-primary/10 text-primary border-primary/30";
+              a.tone === "destructive"
+                ? "bg-destructive/10 text-destructive border-destructive/30"
+                : "bg-warning/10 text-warning border-warning/30";
+            const iconBg =
+              a.tone === "destructive" ? "bg-destructive/15" : "bg-warning/15";
             return (
-              <Link key={i} to={a.to} className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 ${toneCls} active:scale-[0.99] transition-transform`}>
-                <Icon className="h-4 w-4 shrink-0" />
+              <Link
+                key={i}
+                to={a.to}
+                className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${toneCls} active:scale-[0.99] transition-all hover:shadow-card`}
+              >
+                <div className={`h-8 w-8 rounded-xl ${iconBg} flex items-center justify-center shrink-0`}>
+                  <Icon className="h-4 w-4" strokeWidth={2.2} />
+                </div>
                 <span className="text-sm font-semibold flex-1 min-w-0 truncate">{a.label}</span>
-                <span className="text-xs opacity-70">Ver →</span>
+                <ChevronRight className="h-4 w-4 opacity-50 shrink-0" />
               </Link>
             );
           })}
         </div>
       )}
 
-      {/* Relatório Telegram Quick Action */}
-      <div className="flex items-center justify-between gap-3 bg-card/40 backdrop-blur-md border border-border/60 rounded-[22px] p-4 shadow-card">
+      {/* Telegram Quick Action */}
+      <div className="flex items-center justify-between gap-3 bg-gradient-hero border border-primary/10 rounded-[22px] p-4 shadow-card">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-full bg-sky-500/10 text-sky-400 flex items-center justify-center shrink-0">
-            <MessageSquare className="h-4 w-4" strokeWidth={2.2} />
+          <div className="h-10 w-10 rounded-xl bg-sky-500/15 text-sky-400 flex items-center justify-center shrink-0">
+            <MessageSquare className="h-5 w-5" strokeWidth={2.2} />
           </div>
           <div>
             <p className="text-xs font-bold text-foreground">Relatório Telegram</p>
-            <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Envie o status residencial consolidado para seu celular</p>
+            <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Status residencial consolidado</p>
           </div>
         </div>
         <button
           onClick={handleSendTelegramReport}
           disabled={sendingReport}
-          className="h-8 px-3.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors active:scale-95 disabled:opacity-50 cursor-pointer shadow-sm"
+          className="h-9 px-4 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors active:scale-95 disabled:opacity-50 cursor-pointer shadow-sm"
         >
           <Send className="h-3.5 w-3.5" />
           {sendingReport ? "Enviando..." : "Enviar"}
@@ -109,15 +126,23 @@ export default function Dashboard() {
           {criticalMaint.length > 0 && (
             <Section title="Tarefas próximas" subtitle="Próximos 7 dias">
               <div className="space-y-2">
-                {criticalMaint.slice(0, 3).map((m) => (
-                  <div key={m.id} className="flex items-center justify-between bg-card rounded-2xl p-3 shadow-card">
-                    <div>
-                      <p className="font-semibold text-sm">{m.title}</p>
-                      <p className="text-xs text-muted-foreground">Vence {formatDate(m.next_due_date)}</p>
+                {criticalMaint.slice(0, 3).map((m) => {
+                  const days = daysUntil(m.next_due_date);
+                  const isOverdue = days < 0;
+                  return (
+                    <div key={m.id} className="flex items-center gap-3 bg-muted/30 rounded-xl p-3">
+                      <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 ${isOverdue ? "bg-destructive/15" : "bg-warning/15"}`}>
+                        <AlertTriangle className={`h-4 w-4 ${isOverdue ? "text-destructive" : "text-warning"}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm truncate">{m.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {isOverdue ? `${Math.abs(days)}d atrasada` : days === 0 ? "Vence hoje" : `Em ${days}d`}
+                        </p>
+                      </div>
                     </div>
-                    <AlertTriangle className="h-4 w-4 text-destructive" />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </Section>
           )}
@@ -127,6 +152,55 @@ export default function Dashboard() {
           <MaintenanceDonutCard items={maintenance.data ?? []} />
         </div>
       </div>
+    </div>
+  );
+}
+
+function HeroMetrics({ lowStock, overdue, critical, ok }: { lowStock: number; overdue: number; critical: number; ok: number }) {
+  const metrics = [
+    {
+      label: "Em falta",
+      value: lowStock,
+      to: "/inventory",
+      icon: Package,
+      tone: lowStock > 0 ? "text-destructive" : "text-success",
+      bg: lowStock > 0 ? "bg-destructive/10" : "bg-success/10",
+    },
+    {
+      label: "Atrasadas",
+      value: overdue,
+      to: "/maintenance",
+      icon: Wrench,
+      tone: overdue > 0 ? "text-destructive" : "text-success",
+      bg: overdue > 0 ? "bg-destructive/10" : "bg-success/10",
+    },
+    {
+      label: "Em 7 dias",
+      value: critical,
+      to: "/maintenance",
+      icon: AlertTriangle,
+      tone: critical > 0 ? "text-warning" : "text-success",
+      bg: critical > 0 ? "bg-warning/10" : "bg-success/10",
+    },
+  ];
+
+  return (
+    <div className="grid grid-cols-3 gap-3">
+      {metrics.map((m) => (
+        <Link
+          key={m.label}
+          to={m.to}
+          className="bg-card border border-border/60 rounded-2xl p-3.5 shadow-card active:scale-[0.97] transition-all hover:shadow-elevated hover:border-primary/20 flex flex-col gap-2.5"
+        >
+          <div className={`h-8 w-8 rounded-xl ${m.bg} flex items-center justify-center`}>
+            <m.icon className={`h-4 w-4 ${m.tone}`} strokeWidth={2.2} />
+          </div>
+          <div>
+            <p className={`text-2xl font-bold tabular-nums leading-none ${m.tone}`}>{m.value}</p>
+            <p className="text-[10px] text-muted-foreground mt-1 leading-tight">{m.label}</p>
+          </div>
+        </Link>
+      ))}
     </div>
   );
 }
@@ -147,12 +221,11 @@ function MaintenanceDonutCard({ items }: { items: any[] }) {
   const total = items.length;
   const segments = [
     { key: "overdue", label: "Atrasadas", value: buckets.overdue, color: "hsl(var(--destructive))" },
-    { key: "soon", label: "Próximas (7 dias)", value: buckets.soon, color: "hsl(var(--warning))" },
+    { key: "soon", label: "Próximas (7d)", value: buckets.soon, color: "hsl(var(--warning))" },
     { key: "ok", label: "Em dia", value: buckets.ok, color: "hsl(var(--primary))" },
     { key: "done", label: "Concluídas", value: buckets.done, color: "hsl(var(--success))" },
   ];
 
-  // Donut math
   const size = 132;
   const stroke = 14;
   const r = (size - stroke) / 2;
@@ -164,25 +237,24 @@ function MaintenanceDonutCard({ items }: { items: any[] }) {
   const arcs = segments.map((s) => {
     const frac = total > 0 ? s.value / total : 0;
     const dash = frac * C;
-    const arc = {
-      ...s,
-      dasharray: `${dash} ${C - dash}`,
-      dashoffset: -offset,
-    };
+    const arc = { ...s, dasharray: `${dash} ${C - dash}`, dashoffset: -offset };
     offset += dash;
     return arc;
   });
 
-  const headline = buckets.overdue > 0
-    ? { label: "Atrasadas", value: buckets.overdue, tone: "text-destructive" }
-    : buckets.soon > 0
-    ? { label: "Próximas", value: buckets.soon, tone: "text-warning" }
-    : { label: "Em dia", value: buckets.ok, tone: "text-success" };
+  const headline =
+    buckets.overdue > 0
+      ? { label: "Atrasadas", value: buckets.overdue, tone: "text-destructive" }
+      : buckets.soon > 0
+      ? { label: "Próximas", value: buckets.soon, tone: "text-warning" }
+      : total === 0
+      ? { label: "Sem tarefas", value: 0, tone: "text-muted-foreground" }
+      : { label: "Em dia", value: buckets.ok, tone: "text-success" };
 
   return (
     <Link
       to="/maintenance"
-      className="block bg-card border border-border/60 rounded-[22px] p-4 shadow-card active:scale-[0.99] transition-transform"
+      className="block bg-card border border-border/60 rounded-[22px] p-4 shadow-card active:scale-[0.99] transition-all hover:shadow-elevated hover:border-primary/20"
     >
       <div className="flex items-baseline justify-between mb-3">
         <h2 className="text-sm font-semibold flex items-center gap-2">
@@ -193,10 +265,13 @@ function MaintenanceDonutCard({ items }: { items: any[] }) {
       </div>
 
       {total === 0 ? (
-        <p className="text-xs text-muted-foreground py-4 text-center">Nenhuma manutenção cadastrada.</p>
+        <div className="flex flex-col items-center justify-center py-6 gap-2 text-muted-foreground/50">
+          <CheckCircle2 className="h-8 w-8" />
+          <p className="text-xs text-muted-foreground">Nenhuma manutenção cadastrada.</p>
+        </div>
       ) : (
         <div className="flex items-center gap-4">
-          <div className="relative shrink-0" style={{ width: size, height: size }} aria-label="Distribuição de manutenções por status">
+          <div className="relative shrink-0" style={{ width: size, height: size }}>
             <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
               <circle cx={cx} cy={cy} r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth={stroke} />
               {arcs.map((a) => a.value > 0 && (
@@ -215,7 +290,7 @@ function MaintenanceDonutCard({ items }: { items: any[] }) {
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className={`text-2xl font-bold tabular-nums leading-none ${headline.tone}`}>{headline.value}</span>
-              <span className="text-[10px] text-muted-foreground mt-1">{headline.label}</span>
+              <span className="text-[10px] text-muted-foreground mt-1 text-center px-2">{headline.label}</span>
             </div>
           </div>
 
@@ -250,33 +325,6 @@ function Section({ title, subtitle, children }: { title: string; subtitle?: stri
   );
 }
 
-function InventoryMiniChart({ data }: { data: any[] }) {
-  if (!data.length) return <p className="text-xs text-muted-foreground py-4 text-center">Nenhum item ainda.</p>;
-  return (
-    <div className="space-y-2.5">
-      {data.map((i) => {
-        const ratio = i.min_threshold > 0 ? Math.min(2, Number(i.current_qty) / Number(i.min_threshold)) : 1;
-        const pct = Math.min(100, ratio * 50);
-        const low = Number(i.current_qty) < Number(i.min_threshold);
-        return (
-          <div key={i.id}>
-            <div className="flex justify-between text-xs mb-1">
-              <span className="font-medium truncate pr-2">{i.name}</span>
-              <span className="text-muted-foreground tabular-nums">{i.current_qty} {i.unit}</span>
-            </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full ${low ? "bg-destructive" : "bg-gradient-primary"}`}
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 function StockHealthCard({ total, lowCount }: { total: number; lowCount: number }) {
   const pct = total > 0 ? Math.round((lowCount / total) * 100) : 0;
   let level: "good" | "attention" | "critical" = "good";
@@ -288,21 +336,18 @@ function StockHealthCard({ total, lowCount }: { total: number; lowCount: number 
       label: "Bom nível",
       desc: "Estoque saudável",
       tone: "bg-success/15 text-success border-success/30",
-      bar: "bg-success",
       dot: "bg-success",
     },
     attention: {
       label: "Atenção",
       desc: "Alguns itens precisam de reposição",
       tone: "bg-warning/15 text-warning border-warning/30",
-      bar: "bg-warning",
       dot: "bg-warning",
     },
     critical: {
       label: "Crítico",
       desc: "Muitos itens em falta",
       tone: "bg-destructive/10 text-destructive border-destructive/30",
-      bar: "bg-destructive",
       dot: "bg-destructive",
     },
   }[level];
@@ -310,7 +355,7 @@ function StockHealthCard({ total, lowCount }: { total: number; lowCount: number 
   return (
     <Link
       to="/inventory"
-      className="block bg-card border border-border/60 rounded-[22px] p-4 shadow-card active:scale-[0.99] transition-transform"
+      className="block bg-card border border-border/60 rounded-[22px] p-4 shadow-card active:scale-[0.99] transition-all hover:shadow-elevated hover:border-primary/20"
     >
       <div className="flex items-baseline justify-between mb-3">
         <h2 className="text-sm font-semibold">Níveis de estoque</h2>
@@ -318,7 +363,10 @@ function StockHealthCard({ total, lowCount }: { total: number; lowCount: number 
       </div>
 
       {total === 0 ? (
-        <p className="text-xs text-muted-foreground py-2 text-center">Nenhum item cadastrado.</p>
+        <div className="flex flex-col items-center justify-center py-4 gap-2 text-muted-foreground/50">
+          <Package className="h-8 w-8" />
+          <p className="text-xs text-muted-foreground">Nenhum item cadastrado.</p>
+        </div>
       ) : (
         <>
           <div className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 ${cfg.tone}`}>
@@ -337,12 +385,11 @@ function StockHealthCard({ total, lowCount }: { total: number; lowCount: number 
           </div>
           <div className="relative mt-1 h-3">
             <div
-              className="absolute -top-[7px] h-3 w-0.5 bg-foreground rounded-full"
+              className="absolute -top-[7px] h-3 w-0.5 bg-foreground rounded-full transition-all duration-500"
               style={{ left: `calc(${Math.min(100, pct)}% - 1px)` }}
               aria-hidden
             />
           </div>
-
           <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
             <span>Bom &lt;20%</span>
             <span>Atenção 20-50%</span>

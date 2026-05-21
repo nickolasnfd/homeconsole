@@ -77,7 +77,7 @@ export default function Auth() {
           </div>
         </div>
 
-        <div className="bg-card/60 backdrop-blur-xl border border-border/60 rounded-[24px] p-6 shadow-elevated">
+        <div className="bg-card/80 backdrop-blur-xl border border-border/60 rounded-[24px] p-6 shadow-elevated bg-gradient-hero">
           <form onSubmit={handleAuth} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="email" className="text-xs font-medium text-muted-foreground">E-mail</Label>
@@ -101,7 +101,7 @@ export default function Auth() {
                 className="bg-background/50 h-11"
               />
             </div>
-            <Button type="submit" className="w-full h-11 font-semibold mt-2" disabled={loading}>
+            <Button type="submit" className="w-full h-11 font-semibold mt-2 bg-gradient-primary hover:opacity-90 border-0 shadow-glow transition-opacity" disabled={loading}>
               {loading ? "Aguarde..." : isSignUp ? "Criar conta" : "Entrar"}
             </Button>
           </form>

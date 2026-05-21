@@ -3,7 +3,7 @@ import { useTable } from "@/hooks/useTable";
 import { addFrequencyISO, daysUntil, formatDate, todayISO } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Trash2 } from "lucide-react";
+import { CheckCircle2, Trash2, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { AddItemButton } from "@/components/AddItemButton";
 import { MaintenanceForm } from "@/components/forms/MaintenanceForm";
@@ -68,7 +68,15 @@ export default function Maintenance() {
   if (!data.length) return (
     <div className="space-y-4">
       {addButton}
-      <div className="text-center py-12"><p className="font-semibold">Nenhuma tarefa ainda</p><p className="text-sm text-muted-foreground mt-1">Toque em adicionar para programar manutenções recorrentes.</p></div>
+      <div className="text-center py-14 bg-card/40 rounded-2xl border border-border/60 flex flex-col items-center gap-3">
+        <div className="h-14 w-14 rounded-full bg-muted/50 flex items-center justify-center">
+          <Wrench className="h-7 w-7 text-muted-foreground/40" />
+        </div>
+        <div>
+          <p className="font-semibold">Nenhuma tarefa ainda</p>
+          <p className="text-sm text-muted-foreground mt-1">Adicione manutenções recorrentes para sua casa.</p>
+        </div>
+      </div>
     </div>
   );
 
@@ -126,7 +134,7 @@ export default function Maintenance() {
             tabIndex={0}
             onClick={() => setEditing(m)}
             onKeyDown={(e) => { if (e.key === "Enter") setEditing(m); }}
-            className="bg-card border border-border/60 rounded-2xl p-4 shadow-card cursor-pointer active:scale-[0.997] transition-transform"
+            className="bg-card border border-border/60 rounded-2xl p-4 shadow-card cursor-pointer active:scale-[0.997] transition-all hover:shadow-elevated hover:ring-1 hover:ring-primary/15"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">

@@ -132,12 +132,12 @@ export default function Settings() {
     <div className="space-y-6">
       <section className="bg-card border border-border/60 rounded-[22px] p-5 shadow-card">
         <div className="flex items-center gap-4 mb-4">
-          <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-            <UserIcon className="h-6 w-6" />
+          <div className="h-14 w-14 rounded-full bg-gradient-primary flex items-center justify-center shadow-glow text-primary-foreground font-bold text-lg shrink-0 select-none">
+            {user?.email ? user.email.slice(0, 2).toUpperCase() : "U"}
           </div>
-          <div>
+          <div className="min-w-0">
             <h2 className="text-sm font-semibold">Sua Conta</h2>
-            <p className="text-xs text-muted-foreground">{user?.email}</p>
+            <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
           </div>
         </div>
 

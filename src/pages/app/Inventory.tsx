@@ -316,7 +316,7 @@ export default function Inventory() {
             tabIndex={0}
             onClick={() => setEditing(i)}
             onKeyDown={(e) => { if (e.key === "Enter") setEditing(i); }}
-            className={`bg-card border rounded-2xl p-4 shadow-card cursor-pointer active:scale-[0.997] transition-transform ${low ? "border-destructive/50" : "border-border/60"}`}
+            className={`bg-card border rounded-2xl p-4 shadow-card cursor-pointer active:scale-[0.997] transition-all hover:shadow-elevated hover:ring-1 ${low ? "border-destructive/50 hover:ring-destructive/20" : "border-border/60 hover:ring-primary/15"}`}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
@@ -460,9 +460,14 @@ function Skeleton() {
 
 function Empty({ title, body }: { title: string; body: string }) {
   return (
-    <div className="text-center py-16">
-      <p className="font-semibold">{title}</p>
-      <p className="text-sm text-muted-foreground mt-1">{body}</p>
+    <div className="text-center py-14 bg-card/40 rounded-2xl border border-border/60 flex flex-col items-center gap-3">
+      <div className="h-14 w-14 rounded-full bg-muted/50 flex items-center justify-center">
+        <Package className="h-7 w-7 text-muted-foreground/40" />
+      </div>
+      <div>
+        <p className="font-semibold">{title}</p>
+        <p className="text-sm text-muted-foreground mt-1">{body}</p>
+      </div>
     </div>
   );
 }
