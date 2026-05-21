@@ -3,7 +3,7 @@ import { useTable } from "@/hooks/useTable";
 import { addFrequencyISO, daysUntil, formatDate, todayISO } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Trash2 } from "lucide-react";
+import { CheckCircle2, Trash2, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { AddItemButton } from "@/components/AddItemButton";
 import { MaintenanceForm } from "@/components/forms/MaintenanceForm";
@@ -46,16 +46,33 @@ export default function Maintenance() {
     }
   }
 
-  async function remove(id: string) {
+  async function remove(item: any) {
     const prev = qc.getQueryData<any[]>(["maintenance"]);
     qc.setQueriesData({ queryKey: ["maintenance"] }, (old: any[] | undefined) =>
-      (old ?? []).filter((it) => it.id !== id)
+      (old ?? []).filter((it) => it.id !== item.id)
     );
-    const { error } = await supabase.from("maintenance").delete().eq("id", id);
-    if (error) {
-      qc.setQueryData(["maintenance"], prev);
-      return toast.error(error.message);
-    }
+    let undone = false;
+    toast(`"${item.title}" removida`, {
+      action: {
+        label: "Desfazer",
+        onClick: () => {
+          undone = true;
+          qc.setQueriesData({ queryKey: ["maintenance"] }, (old: any[] | undefined) => {
+            const list = Array.isArray(old) ? [...old, item] : [item];
+            return list.sort((a, b) => String(a.next_due_date).localeCompare(String(b.next_due_date)));
+          });
+        },
+      },
+      duration: 5000,
+    });
+    setTimeout(async () => {
+      if (undone) return;
+      const { error } = await supabase.from("maintenance").delete().eq("id", item.id);
+      if (error) {
+        qc.setQueryData(["maintenance"], prev);
+        toast.error(error.message);
+      }
+    }, 5200);
   }
 
   const addButton = (
@@ -68,7 +85,17 @@ export default function Maintenance() {
   if (!data.length) return (
     <div className="space-y-4">
       {addButton}
-      <div className="text-center py-12"><p className="font-semibold">Nenhuma tarefa ainda</p><p className="text-sm text-muted-foreground mt-1">Toque em adicionar para programar manutenções recorrentes.</p></div>
+      <div className="text-center py-16 bg-card/40 rounded-2xl border border-dashed border-border flex flex-col items-center gap-4">
+        <div className="h-16 w-16 rounded-2xl bg-muted/60 flex items-center justify-center">
+          <Wrench className="h-8 w-8 text-muted-foreground/40" />
+        </div>
+        <div className="space-y-1">
+          <p className="font-semibold text-sm">Nenhuma tarefa ainda</p>
+          <p className="text-xs text-muted-foreground max-w-[220px] mx-auto leading-relaxed">
+            Adicione manutenções recorrentes para antecipar os cuidados da sua casa.
+          </p>
+        </div>
+      </div>
     </div>
   );
 
@@ -126,7 +153,7 @@ export default function Maintenance() {
             tabIndex={0}
             onClick={() => setEditing(m)}
             onKeyDown={(e) => { if (e.key === "Enter") setEditing(m); }}
-            className="bg-card border border-border/60 rounded-2xl p-4 shadow-card cursor-pointer active:scale-[0.997] transition-transform"
+            className="bg-card border border-border/60 rounded-2xl p-4 shadow-card cursor-pointer active:scale-[0.997] transition-all hover:shadow-elevated hover:ring-1 hover:ring-primary/15"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
@@ -145,7 +172,7 @@ export default function Maintenance() {
                     <CheckCircle2 className="h-4 w-4" />
                   </button>
                 )}
-                <button onClick={(e) => { e.stopPropagation(); remove(m.id); }} className="h-9 w-9 rounded-xl bg-muted text-muted-foreground active:scale-95 flex items-center justify-center" aria-label="Excluir">
+                <button onClick={(e) => { e.stopPropagation(); remove(m); }} className="h-9 w-9 rounded-xl bg-muted text-muted-foreground active:scale-95 flex items-center justify-center" aria-label="Excluir">
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>

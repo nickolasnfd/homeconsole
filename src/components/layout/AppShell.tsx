@@ -27,6 +27,21 @@ const titles: Record<string, { title: string; subtitle: string }> = {
   "/settings": { title: "Ajustes", subtitle: "Gerencie sua conta" },
 };
 
+function getInitials(email?: string): string {
+  if (!email) return "U";
+  const name = email.split("@")[0];
+  const parts = name.split(/[._-]/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return "Bom dia";
+  if (h < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const meta = titles[pathname] ?? titles["/"];
@@ -55,29 +70,37 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   };
 
-  const renderHeaderDropdown = (sizeClass = "h-11 w-11") => (
+  const initials = getInitials(user?.email);
+
+  const renderHeaderDropdown = (sizeClass = "h-11 w-11", textSize = "text-sm") => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button 
+        <button
           className={cn(
-            "rounded-full bg-gradient-primary flex items-center justify-center shadow-glow hover:scale-105 active:scale-95 transition-transform duration-200 cursor-pointer shrink-0",
-            sizeClass
+            "rounded-full bg-gradient-primary flex items-center justify-center shadow-glow hover:scale-105 active:scale-95 transition-transform duration-200 cursor-pointer shrink-0 font-bold text-primary-foreground select-none",
+            sizeClass,
+            textSize
           )}
           aria-label="Painel de controle"
         >
-          <Home className="h-5 w-5 text-primary-foreground" strokeWidth={2.4} />
+          {initials}
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64 rounded-3xl bg-card/95 backdrop-blur-xl border border-border/60 p-2 shadow-elevated">
         <DropdownMenuLabel className="px-3 py-2">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Central de Comando</span>
-            <span className="text-xs font-semibold text-foreground truncate mt-0.5">{user?.email || "Usuário Local"}</span>
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-gradient-primary flex items-center justify-center font-bold text-primary-foreground text-sm shrink-0 shadow-glow">
+              {initials}
+            </div>
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Central de Comando</span>
+              <span className="text-xs font-semibold text-foreground truncate">{user?.email || "Usuário Local"}</span>
+            </div>
           </div>
         </DropdownMenuLabel>
-        
+
         <DropdownMenuSeparator className="bg-border/40 my-1" />
-        
+
         <div className="px-3 py-2 flex items-center gap-2 text-xs">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
@@ -115,18 +138,19 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row text-foreground">
-      {/* Ambient cyan glow background */}
+      {/* Ambient glow background */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-32 -left-20 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
-        <div className="absolute top-1/3 -right-24 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute -top-32 -left-20 h-96 w-96 rounded-full bg-primary/15 blur-3xl" />
+        <div className="absolute top-1/3 -right-24 h-80 w-80 rounded-full bg-primary/8 blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-primary/5 blur-3xl" />
       </div>
 
       {/* DESKTOP SIDEBAR */}
       <aside className="hidden md:flex flex-col w-64 bg-card/40 backdrop-blur-xl border-r border-border/40 p-5 h-screen sticky top-0 justify-between shrink-0">
         <div className="space-y-6">
-          {/* Sidebar Logo / Control icon */}
+          {/* Sidebar header with avatar */}
           <div className="flex items-center gap-3 py-2 border-b border-border/20">
-            {renderHeaderDropdown("h-10 w-10")}
+            {renderHeaderDropdown("h-10 w-10", "text-xs")}
             <div className="min-w-0">
               <p className="text-[9px] font-bold text-primary uppercase tracking-[0.18em]">Console</p>
               <h1 className="text-sm font-extrabold text-foreground tracking-tight leading-tight">Central Residencial</h1>
@@ -134,7 +158,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
 
           {/* Sidebar navigation links */}
-          <nav className="flex flex-col gap-1.5">
+          <nav className="flex flex-col gap-1">
             {tabs.map((tab) => (
               <NavLink
                 key={tab.to}
@@ -142,15 +166,19 @@ export function AppShell({ children }: { children: ReactNode }) {
                 end={tab.end}
                 className={({ isActive }) =>
                   cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-2xl transition-all font-semibold text-sm",
+                    "flex items-center gap-3 px-4 py-3 rounded-2xl transition-all text-sm font-semibold",
                     isActive
-                      ? "bg-primary/10 text-primary shadow-sm border border-primary/10"
+                      ? "bg-gradient-to-r from-primary/20 to-primary/5 text-primary"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
                   )
                 }
               >
-                <tab.icon className="h-5 w-5" strokeWidth={2.2} />
-                <span>{tab.label}</span>
+                {({ isActive }) => (
+                  <>
+                    <tab.icon className={cn("h-5 w-5 transition-transform", isActive && "scale-110")} strokeWidth={isActive ? 2.5 : 2.2} />
+                    <span>{tab.label}</span>
+                  </>
+                )}
               </NavLink>
             ))}
           </nav>
@@ -175,14 +203,14 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex-1 flex flex-col min-h-screen min-w-0">
         <header className="sticky top-0 z-30 bg-background/70 backdrop-blur-xl border-b border-border/40 md:bg-transparent md:backdrop-blur-none md:border-b-0">
           <div className="max-w-md md:max-w-5xl lg:max-w-7xl w-full mx-auto px-5 pt-6 pb-4 md:pt-8 md:pb-6 flex items-center gap-3">
-            {/* Show dropdown home icon on mobile only */}
+            {/* Mobile avatar dropdown */}
             <div className="md:hidden">
-              {renderHeaderDropdown("h-11 w-11")}
+              {renderHeaderDropdown("h-11 w-11", "text-sm")}
             </div>
 
             <div className="flex-1 min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary leading-none mb-1">
-                {meta.subtitle}
+                {pathname === "/" ? getGreeting() : meta.subtitle}
               </p>
               <h1 className="text-lg md:text-2xl font-bold tracking-tight text-foreground leading-none truncate">
                 {meta.title}
@@ -201,41 +229,29 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* MOBILE BOTTOM NAVIGATION */}
       <nav className="fixed bottom-0 inset-x-0 z-40 safe-bottom md:hidden">
         <div className="max-w-md mx-auto px-4 pb-4">
-          <div className="relative bg-card/95 backdrop-blur-xl border border-border/60 rounded-[28px] shadow-elevated grid grid-cols-5 px-2 py-2">
-            {tabs.map((tab) => {
-              if (tab.disabled) {
-                return (
-                  <button
-                    key={tab.to}
-                    type="button"
-                    disabled
-                    aria-disabled="true"
-                    className="flex flex-col items-center justify-center gap-1 py-2 rounded-2xl text-muted-foreground/40 cursor-not-allowed"
-                  >
-                    <tab.icon className="h-5 w-5" strokeWidth={2.2} />
-                    <span className="text-[10px] font-semibold tracking-wide">{tab.label}</span>
-                  </button>
-                );
-              }
-              return (
-                <NavLink
-                  key={tab.to}
-                  to={tab.to}
-                  end={tab.end}
-                  className={({ isActive }) =>
-                    cn(
-                      "flex flex-col items-center justify-center gap-1 py-2 rounded-2xl transition-all",
-                      isActive
-                        ? "text-primary"
-                        : "text-muted-foreground hover:text-foreground"
-                    )
-                  }
-                >
-                  <tab.icon className="h-5 w-5" strokeWidth={2.2} />
-                  <span className="text-[10px] font-semibold tracking-wide">{tab.label}</span>
-                </NavLink>
-              );
-            })}
+          <div className="relative bg-card/95 backdrop-blur-xl border border-border/60 rounded-[28px] shadow-elevated grid grid-cols-4 px-2 py-2">
+            {tabs.map((tab) => (
+              <NavLink
+                key={tab.to}
+                to={tab.to}
+                end={tab.end}
+                className={({ isActive }) =>
+                  cn(
+                    "flex flex-col items-center justify-center gap-1 py-2.5 px-2 rounded-2xl transition-all",
+                    isActive
+                      ? "text-primary bg-primary/10"
+                      : "text-muted-foreground hover:text-foreground"
+                  )
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <tab.icon className={cn("h-5 w-5 transition-transform", isActive && "scale-110")} strokeWidth={isActive ? 2.5 : 2.2} />
+                    <span className={cn("text-[10px] font-semibold tracking-wide", isActive && "font-bold")}>{tab.label}</span>
+                  </>
+                )}
+              </NavLink>
+            ))}
           </div>
         </div>
       </nav>

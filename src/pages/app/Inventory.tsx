@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTable } from "@/hooks/useTable";
 import { formatDate } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { Trash2, Plus, Minus, AlertTriangle, ShoppingCart, CalendarClock, Search, Copy, FileDown } from "lucide-react";
+import { Trash2, Plus, Minus, AlertTriangle, ShoppingCart, CalendarClock, Search, Copy, FileDown, Package } from "lucide-react";
 import { toast } from "sonner";
 import { AddItemButton } from "@/components/AddItemButton";
 import { InventoryForm } from "@/components/forms/InventoryForm";
@@ -14,6 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 type Filter = "all" | "low" | "expiring";
 
@@ -32,6 +33,8 @@ export default function Inventory() {
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
+  const [editingMinId, setEditingMinId] = useState<string | null>(null);
+  const [editingMinValue, setEditingMinValue] = useState("");
 
   const [openCategories, setOpenCategories] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
@@ -160,6 +163,19 @@ export default function Inventory() {
     return list;
   }, [data, filter, query, shoppingList, expiringList]);
 
+  async function updateMinThreshold(id: string, value: string) {
+    const next = Math.max(0, Number(value) || 0);
+    setEditingMinId(null);
+    qc.setQueriesData({ queryKey: ["inventory"] }, (old: any[] | undefined) =>
+      (old ?? []).map((it) => (it.id === id ? { ...it, min_threshold: next } : it))
+    );
+    const { error } = await supabase.from("inventory").update({ min_threshold: next }).eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      qc.invalidateQueries({ queryKey: ["inventory"] });
+    }
+  }
+
   async function adjust(id: string, current: number, delta: number) {
     const next = Math.max(0, Number(current) + delta);
     qc.setQueriesData({ queryKey: ["inventory"] }, (old: any[] | undefined) =>
@@ -211,7 +227,10 @@ export default function Inventory() {
   if (!data.length) return (
     <div className="space-y-4">
       {addButton}
-      <Empty title="Nenhum item ainda" body="Toque em adicionar para criar seu primeiro item." />
+      <Empty
+        title="Estoque vazio"
+        body="Adicione itens para acompanhar suprimentos, validade e estoque mínimo da sua casa."
+      />
     </div>
   );
 
@@ -238,9 +257,10 @@ export default function Inventory() {
       </Tabs>
 
       {filtered.length === 0 && (
-        <div className="bg-card border border-border/60 rounded-2xl p-6 text-center">
-          <p className="text-sm text-muted-foreground">Nenhum item nesta visão.</p>
-        </div>
+        <Empty
+          title={query ? "Nenhum resultado" : filter === "low" ? "Estoque OK!" : "Nenhum item vencendo"}
+          body={query ? `Nenhum item encontrado para "${query}".` : filter === "low" ? "Todos os itens estão acima do estoque mínimo." : "Nenhum produto próximo da validade."}
+        />
       )}
 
       {(() => {
@@ -316,7 +336,7 @@ export default function Inventory() {
             tabIndex={0}
             onClick={() => setEditing(i)}
             onKeyDown={(e) => { if (e.key === "Enter") setEditing(i); }}
-            className={`bg-card border rounded-2xl p-4 shadow-card cursor-pointer active:scale-[0.997] transition-transform ${low ? "border-destructive/50" : "border-border/60"}`}
+            className={`bg-card border rounded-2xl p-4 shadow-card cursor-pointer active:scale-[0.997] transition-all hover:shadow-elevated hover:ring-1 ${low ? "border-destructive/50 hover:ring-destructive/20" : "border-border/60 hover:ring-primary/15"}`}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
@@ -344,11 +364,48 @@ export default function Inventory() {
             </div>
 
             <div className="mt-3">
-              <Progress value={pct} className={`h-1.5 ${low ? "[&>div]:bg-destructive" : "[&>div]:bg-success"}`} />
-              <div className="flex items-center justify-between mt-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Progress value={pct} className={`h-1.5 cursor-default ${low ? "[&>div]:bg-destructive" : "[&>div]:bg-success"}`} />
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  Atual: {cur} {i.unit} / Mínimo: {min} {i.unit}
+                </TooltipContent>
+              </Tooltip>
+              <div className="flex items-center justify-between mt-1 gap-2">
                 <span className={`text-[11px] font-medium ${low ? "text-destructive" : "text-muted-foreground"}`}>
-                  {low ? `Faltam ${need} ${i.unit}` : "Estoque saudável"} · mín {i.min_threshold}
+                  {low ? `Faltam ${need} ${i.unit}` : "Estoque saudável"}
                 </span>
+                <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <span className="text-[10px] text-muted-foreground">mín</span>
+                  {editingMinId === i.id ? (
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      autoFocus
+                      value={editingMinValue}
+                      onChange={(e) => setEditingMinValue(e.target.value)}
+                      onBlur={() => updateMinThreshold(i.id, editingMinValue)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") updateMinThreshold(i.id, editingMinValue);
+                        if (e.key === "Escape") setEditingMinId(null);
+                      }}
+                      className="w-14 text-center text-[11px] font-bold border border-primary rounded-md px-1 py-0.5 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  ) : (
+                    <button
+                      className="text-[11px] font-bold underline-offset-2 hover:underline text-muted-foreground hover:text-foreground transition-colors px-1 rounded cursor-pointer"
+                      title="Clique para editar estoque mínimo"
+                      onClick={() => {
+                        setEditingMinId(i.id);
+                        setEditingMinValue(String(i.min_threshold));
+                      }}
+                    >
+                      {i.min_threshold}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -460,9 +517,14 @@ function Skeleton() {
 
 function Empty({ title, body }: { title: string; body: string }) {
   return (
-    <div className="text-center py-16">
-      <p className="font-semibold">{title}</p>
-      <p className="text-sm text-muted-foreground mt-1">{body}</p>
+    <div className="text-center py-16 bg-card/40 rounded-2xl border border-dashed border-border rounded-2xl flex flex-col items-center gap-4">
+      <div className="h-16 w-16 rounded-2xl bg-muted/60 flex items-center justify-center">
+        <Package className="h-8 w-8 text-muted-foreground/40" />
+      </div>
+      <div className="space-y-1">
+        <p className="font-semibold text-sm">{title}</p>
+        <p className="text-xs text-muted-foreground max-w-[220px] mx-auto leading-relaxed">{body}</p>
+      </div>
     </div>
   );
 }

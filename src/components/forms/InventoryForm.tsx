@@ -6,23 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-export const INVENTORY_CATEGORIES = [
-  "Hortifrúti",
-  "Carnes e Peixes",
-  "Laticínios",
-  "Padaria",
-  "Mercearia",
-  "Bebidas",
-  "Congelados",
-  "Higiene",
-  "Limpeza",
-  "Pet",
-  "Outros",
-];
+import { useInventoryCategories } from "@/hooks/useInventoryCategories";
 
 export function InventoryForm({ onDone, initial }: { onDone: () => void; initial?: any }) {
   const qc = useQueryClient();
+  const { allCategories } = useInventoryCategories();
   const isEdit = !!initial?.id;
   const [form, setForm] = useState({
     name: initial?.name ?? "",
@@ -85,7 +73,7 @@ export function InventoryForm({ onDone, initial }: { onDone: () => void; initial
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent>
-              {INVENTORY_CATEGORIES.map((c) => (
+              {allCategories.map((c) => (
                 <SelectItem key={c} value={c}>{c}</SelectItem>
               ))}
             </SelectContent>
