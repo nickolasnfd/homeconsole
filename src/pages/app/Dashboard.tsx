@@ -1,15 +1,86 @@
 import { useMemo, useState } from "react";
 import { useTable } from "@/hooks/useTable";
 import { daysUntil, formatDate } from "@/lib/format";
-import { AlertTriangle, Wrench, Package, MessageSquare, Send, ChevronRight, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, Wrench, Package, MessageSquare, Send, ChevronRight, CheckCircle2, SlidersHorizontal, Eye, EyeOff, GripVertical } from "lucide-react";
 import { Link } from "react-router-dom";
 import { sendTelegramMessage } from "@/lib/telegram";
 import { toast } from "sonner";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Switch } from "@/components/ui/switch";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+const CARD_SECTIONS = [
+  { id: "heroMetrics", label: "Métricas rápidas" },
+  { id: "alerts", label: "Alertas ativos" },
+  { id: "telegram", label: "Relatório Telegram" },
+  { id: "stockHealth", label: "Saúde do estoque" },
+  { id: "upcoming", label: "Tarefas próximas" },
+  { id: "donut", label: "Gráfico de manutenção" },
+] as const;
+
+type CardId = (typeof CARD_SECTIONS)[number]["id"];
+const DEFAULT_ORDER: CardId[] = CARD_SECTIONS.map((s) => s.id);
+
+function SortableItem({ id, label, visible, onToggle }: { id: CardId; label: string; visible: boolean; onToggle: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition };
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center justify-between gap-3 px-1 py-1">
+      <div className="flex items-center gap-2">
+        <button {...attributes} {...listeners} className="text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing touch-none">
+          <GripVertical className="h-4 w-4" />
+        </button>
+        {visible ? (
+          <Eye className="h-4 w-4 text-muted-foreground" />
+        ) : (
+          <EyeOff className="h-4 w-4 text-muted-foreground/40" />
+        )}
+        <span className={`text-sm font-medium ${!visible ? "text-muted-foreground/50" : ""}`}>{label}</span>
+      </div>
+      <Switch checked={visible} onCheckedChange={onToggle} />
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const inventory = useTable<any>("inventory", { column: "name" });
   const maintenance = useTable<any>("maintenance", { column: "next_due_date" });
   const [sendingReport, setSendingReport] = useState(false);
+  const [customizing, setCustomizing] = useState(false);
+  const [hiddenCards, setHiddenCards] = useLocalStorage<CardId[]>("dashboard:hidden_cards", []);
+  const [cardOrder, setCardOrder] = useLocalStorage<CardId[]>("dashboard:card_order", DEFAULT_ORDER);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  const isVisible = (id: CardId) => !hiddenCards.includes(id);
+  const toggleCard = (id: CardId) =>
+    setHiddenCards((prev) =>
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+    );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = cardOrder.indexOf(active.id as CardId);
+      const newIndex = cardOrder.indexOf(over.id as CardId);
+      setCardOrder(arrayMove(cardOrder, oldIndex, newIndex));
+    }
+  };
 
   const lowStock = (inventory.data ?? []).filter((i) => Number(i.current_qty) < Number(i.min_threshold));
   const criticalMaint = (maintenance.data ?? []).filter((m) => !m.completed && daysUntil(m.next_due_date) < 7);
@@ -59,99 +130,171 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-5 animate-fade-up">
-      {/* Hero Metrics Row */}
-      <HeroMetrics
-        lowStock={lowStock.length}
-        overdue={overdueMaint.length}
-        critical={criticalMaint.length}
-        ok={okMaint.length}
-      />
-
-      {/* Alerts */}
-      {alerts.length > 0 && (
-        <div className="space-y-2">
-          {alerts.map((a, i) => {
-            const Icon = a.icon;
-            const toneCls =
-              a.tone === "destructive"
-                ? "bg-destructive/10 text-destructive border-destructive/30"
-                : "bg-warning/10 text-warning border-warning/30";
-            const iconBg =
-              a.tone === "destructive" ? "bg-destructive/15" : "bg-warning/15";
-            return (
-              <Link
-                key={i}
-                to={a.to}
-                className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${toneCls} active:scale-[0.99] transition-all hover:shadow-card`}
-              >
-                <div className={`h-8 w-8 rounded-xl ${iconBg} flex items-center justify-center shrink-0`}>
-                  <Icon className="h-4 w-4" strokeWidth={2.2} />
-                </div>
-                <span className="text-sm font-semibold flex-1 min-w-0 truncate">{a.label}</span>
-                <ChevronRight className="h-4 w-4 opacity-50 shrink-0" />
-              </Link>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Telegram Quick Action */}
-      <div className="flex items-center justify-between gap-3 bg-gradient-hero border border-primary/10 rounded-[22px] p-4 shadow-card">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-sky-500/15 text-sky-400 flex items-center justify-center shrink-0">
-            <MessageSquare className="h-5 w-5" strokeWidth={2.2} />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-foreground">Relatório Telegram</p>
-            <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Status residencial consolidado</p>
-          </div>
-        </div>
+      {/* Personalizar button */}
+      <div className="flex justify-end">
         <button
-          onClick={handleSendTelegramReport}
-          disabled={sendingReport}
-          className="h-9 px-4 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors active:scale-95 disabled:opacity-50 cursor-pointer shadow-sm"
+          onClick={() => setCustomizing(true)}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-xl hover:bg-muted/40 cursor-pointer"
         >
-          <Send className="h-3.5 w-3.5" />
-          {sendingReport ? "Enviando..." : "Enviar"}
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          Personalizar
+          {hiddenCards.length > 0 && (
+            <span className="ml-1 px-1.5 py-0.5 rounded-full bg-primary/15 text-primary text-[10px] font-bold">
+              {hiddenCards.length}
+            </span>
+          )}
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div className="space-y-5">
-          <StockHealthCard
-            total={(inventory.data ?? []).length}
-            lowCount={lowStock.length}
-          />
-
-          {criticalMaint.length > 0 && (
-            <Section title="Tarefas próximas" subtitle="Próximos 7 dias">
-              <div className="space-y-2">
-                {criticalMaint.slice(0, 3).map((m) => {
-                  const days = daysUntil(m.next_due_date);
-                  const isOverdue = days < 0;
+      {cardOrder.map((id) => {
+        if (!isVisible(id)) return null;
+        switch (id) {
+          case "heroMetrics":
+            return (
+              <HeroMetrics
+                key={id}
+                lowStock={lowStock.length}
+                overdue={overdueMaint.length}
+                critical={criticalMaint.length}
+                ok={okMaint.length}
+              />
+            );
+          case "alerts":
+            if (alerts.length === 0) return null;
+            return (
+              <div key={id} className="space-y-2">
+                {alerts.map((a, i) => {
+                  const Icon = a.icon;
+                  const toneCls =
+                    a.tone === "destructive"
+                      ? "bg-destructive/10 text-destructive border-destructive/30"
+                      : "bg-warning/10 text-warning border-warning/30";
+                  const iconBg = a.tone === "destructive" ? "bg-destructive/15" : "bg-warning/15";
                   return (
-                    <div key={m.id} className="flex items-center gap-3 bg-muted/30 rounded-xl p-3">
-                      <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 ${isOverdue ? "bg-destructive/15" : "bg-warning/15"}`}>
-                        <AlertTriangle className={`h-4 w-4 ${isOverdue ? "text-destructive" : "text-warning"}`} />
+                    <Link
+                      key={i}
+                      to={a.to}
+                      className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${toneCls} active:scale-[0.99] transition-all hover:shadow-card`}
+                    >
+                      <div className={`h-8 w-8 rounded-xl ${iconBg} flex items-center justify-center shrink-0`}>
+                        <Icon className="h-4 w-4" strokeWidth={2.2} />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate">{m.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {isOverdue ? `${Math.abs(days)}d atrasada` : days === 0 ? "Vence hoje" : `Em ${days}d`}
-                        </p>
-                      </div>
-                    </div>
+                      <span className="text-sm font-semibold flex-1 min-w-0 truncate">{a.label}</span>
+                      <ChevronRight className="h-4 w-4 opacity-50 shrink-0" />
+                    </Link>
                   );
                 })}
               </div>
-            </Section>
-          )}
-        </div>
+            );
+          case "telegram":
+            return (
+              <div key={id} className="flex items-center justify-between gap-3 bg-gradient-hero border border-primary/10 rounded-[22px] p-4 shadow-card">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-sky-500/15 text-sky-400 flex items-center justify-center shrink-0">
+                    <MessageSquare className="h-5 w-5" strokeWidth={2.2} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-foreground">Relatório Telegram</p>
+                    <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Status residencial consolidado</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleSendTelegramReport}
+                  disabled={sendingReport}
+                  className="h-9 px-4 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors active:scale-95 disabled:opacity-50 cursor-pointer shadow-sm"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  {sendingReport ? "Enviando..." : "Enviar"}
+                </button>
+              </div>
+            );
+          case "stockHealth":
+            return (
+              <StockHealthCard
+                key={id}
+                total={(inventory.data ?? []).length}
+                lowCount={lowStock.length}
+              />
+            );
+          case "upcoming":
+            if (criticalMaint.length === 0) return null;
+            return (
+              <Section key={id} title="Tarefas próximas" subtitle="Próximos 7 dias">
+                <div className="space-y-2">
+                  {criticalMaint.slice(0, 3).map((m) => {
+                    const days = daysUntil(m.next_due_date);
+                    const isOverdue = days < 0;
+                    return (
+                      <div key={m.id} className="flex items-center gap-3 bg-muted/30 rounded-xl p-3">
+                        <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 ${isOverdue ? "bg-destructive/15" : "bg-warning/15"}`}>
+                          <AlertTriangle className={`h-4 w-4 ${isOverdue ? "text-destructive" : "text-warning"}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm truncate">{m.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {isOverdue ? `${Math.abs(days)}d atrasada` : days === 0 ? "Vence hoje" : `Em ${days}d`}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Section>
+            );
+          case "donut":
+            return <MaintenanceDonutCard key={id} items={maintenance.data ?? []} />;
+          default:
+            return null;
+        }
+      })}
 
-        <div className="space-y-5">
-          <MaintenanceDonutCard items={maintenance.data ?? []} />
-        </div>
-      </div>
+      {/* Sheet de personalização */}
+      <Sheet open={customizing} onOpenChange={setCustomizing}>
+        <SheetContent side="bottom" className="rounded-t-3xl bg-card border-border/60 max-h-[85vh] overflow-y-auto">
+          <SheetHeader className="mb-2">
+            <SheetTitle className="flex items-center gap-2">
+              <SlidersHorizontal className="h-5 w-5 text-primary" />
+              Personalizar painel
+            </SheetTitle>
+            <p className="text-xs text-muted-foreground">Arraste para reordenar · alterne para mostrar/ocultar</p>
+          </SheetHeader>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={cardOrder} strategy={verticalListSortingStrategy}>
+              <div className="space-y-1 py-2">
+                {cardOrder.map((id) => {
+                  const section = CARD_SECTIONS.find((s) => s.id === id);
+                  if (!section) return null;
+                  return (
+                    <SortableItem
+                      key={id}
+                      id={id}
+                      label={section.label}
+                      visible={isVisible(id)}
+                      onToggle={() => toggleCard(id)}
+                    />
+                  );
+                })}
+              </div>
+            </SortableContext>
+          </DndContext>
+          <div className="border-t border-border/40 pt-3 mt-2 flex gap-2">
+            {hiddenCards.length > 0 && (
+              <button
+                onClick={() => setHiddenCards([])}
+                className="flex-1 text-xs text-muted-foreground hover:text-foreground transition-colors py-2 cursor-pointer text-center"
+              >
+                Mostrar tudo
+              </button>
+            )}
+            <button
+              onClick={() => { setCardOrder(DEFAULT_ORDER); }}
+              className="flex-1 text-xs text-muted-foreground hover:text-foreground transition-colors py-2 cursor-pointer text-center"
+            >
+              Ordem padrão
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
