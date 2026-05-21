@@ -24,6 +24,11 @@ function normalize(str: string): string {
     .trim();
 }
 
+function capitalize(str: string): string {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 async function sendTelegramMessage(chatId: string, text: string) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) return console.error("TELEGRAM_BOT_TOKEN env variable not set.");
@@ -91,41 +96,89 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).send('OK');
       }
 
-      // Buscar item similar no estoque
-      const { data: inventory, error } = await supabase
-        .from('inventory')
-        .select('*')
-        .eq('household_id', householdId);
+      if (itemName.includes(',')) {
+        const items = itemName.split(',').map(i => i.trim()).filter(Boolean);
+        if (items.length === 0) {
+          await sendTelegramMessage(chatId, "⚠️ Por favor, digite o nome do item. Ex: `+ Sabão em pó`");
+          return res.status(200).send('OK');
+        }
 
-      if (error) throw error;
-
-      const normalizedSearch = normalize(itemName);
-      const match = inventory?.find(it => normalize(it.name) === normalizedSearch);
-
-      if (match) {
-        // O comando "+" intencionalmente zera current_qty para sinalizar "faltando",
-        // independente da quantidade anterior. Não é incremento — é marcação de falta.
-        const nextMin = Number(match.min_threshold) === 0 ? 1 : Number(match.min_threshold);
-        await supabase
+        const { data: inventory, error } = await supabase
           .from('inventory')
-          .update({ current_qty: 0, min_threshold: nextMin })
-          .eq('id', match.id);
+          .select('*')
+          .eq('household_id', householdId);
 
-        await sendTelegramMessage(chatId, `✅ *${match.name}* marcado como FALTANDO no estoque.`);
+        if (error) throw error;
+
+        const addedNames: string[] = [];
+
+        for (const name of items) {
+          const normalizedSearch = normalize(name);
+          const match = inventory?.find(it => normalize(it.name) === normalizedSearch);
+
+          if (match) {
+            const nextMin = Number(match.min_threshold) === 0 ? 1 : Number(match.min_threshold);
+            await supabase
+              .from('inventory')
+              .update({ current_qty: 0, min_threshold: nextMin })
+              .eq('id', match.id);
+
+            addedNames.push(match.name);
+          } else {
+            await supabase
+              .from('inventory')
+              .insert({
+                name: name,
+                current_qty: 0,
+                min_threshold: 1,
+                unit: 'un',
+                category: 'Geral',
+                household_id: householdId
+              });
+
+            addedNames.push(capitalize(name));
+          }
+        }
+
+        const responseText = `✅ Adicionados como faltando:\n` + addedNames.map(n => `• ${n}`).join('\n');
+        await sendTelegramMessage(chatId, responseText);
       } else {
-        // Criar novo item
-        await supabase
+        // Buscar item similar no estoque
+        const { data: inventory, error } = await supabase
           .from('inventory')
-          .insert({
-            name: itemName,
-            current_qty: 0,
-            min_threshold: 1,
-            unit: 'un',
-            category: 'Geral',
-            household_id: householdId
-          });
+          .select('*')
+          .eq('household_id', householdId);
 
-        await sendTelegramMessage(chatId, `✅ *${itemName}* adicionado ao estoque como FALTANDO.`);
+        if (error) throw error;
+
+        const normalizedSearch = normalize(itemName);
+        const match = inventory?.find(it => normalize(it.name) === normalizedSearch);
+
+        if (match) {
+          // O comando "+" intencionalmente zera current_qty para sinalizar "faltando",
+          // independente da quantidade anterior. Não é incremento — é marcação de falta.
+          const nextMin = Number(match.min_threshold) === 0 ? 1 : Number(match.min_threshold);
+          await supabase
+            .from('inventory')
+            .update({ current_qty: 0, min_threshold: nextMin })
+            .eq('id', match.id);
+
+          await sendTelegramMessage(chatId, `✅ *${match.name}* marcado como FALTANDO no estoque.`);
+        } else {
+          // Criar novo item
+          await supabase
+            .from('inventory')
+            .insert({
+              name: itemName,
+              current_qty: 0,
+              min_threshold: 1,
+              unit: 'un',
+              category: 'Geral',
+              household_id: householdId
+            });
+
+          await sendTelegramMessage(chatId, `✅ *${itemName}* adicionado ao estoque como FALTANDO.`);
+        }
       }
     }
     // 2. Comando: - <item>
@@ -234,27 +287,76 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).send('OK');
       }
 
-      const { data: inventory, error } = await supabase
-        .from('inventory')
-        .select('*')
-        .eq('household_id', householdId);
+      if (itemName.includes(',')) {
+        const items = itemName.split(',').map(i => i.trim()).filter(Boolean);
+        if (items.length === 0) {
+          await sendTelegramMessage(chatId, "⚠️ Por favor, digite o nome do item. Ex: `del: arroz`");
+          return res.status(200).send('OK');
+        }
 
-      if (error) throw error;
-
-      const normalizedSearch = normalize(itemName);
-      const match = inventory?.find(it => normalize(it.name) === normalizedSearch);
-
-      if (match) {
-        const { error: deleteError } = await supabase
+        const { data: inventory, error } = await supabase
           .from('inventory')
-          .delete()
-          .eq('id', match.id);
+          .select('*')
+          .eq('household_id', householdId);
 
-        if (deleteError) throw deleteError;
+        if (error) throw error;
 
-        await sendTelegramMessage(chatId, `🗑️ ${match.name} removido do estoque.`);
+        const removed: string[] = [];
+        const notFound: string[] = [];
+
+        for (const name of items) {
+          const normalizedSearch = normalize(name);
+          const match = inventory?.find(it => normalize(it.name) === normalizedSearch);
+
+          if (match) {
+            const { error: deleteError } = await supabase
+              .from('inventory')
+              .delete()
+              .eq('id', match.id);
+
+            if (deleteError) throw deleteError;
+
+            removed.push(match.name);
+          } else {
+            notFound.push(capitalize(name));
+          }
+        }
+
+        let response = '';
+        if (removed.length > 0) {
+          response += `🗑️ Removidos do estoque:\n` + removed.map(n => `• ${n}`).join('\n');
+        }
+        if (notFound.length > 0) {
+          if (response) {
+            response += `\n\n`;
+          }
+          response += `❌ Não encontrados:\n` + notFound.map(n => `• ${n}`).join('\n');
+        }
+
+        await sendTelegramMessage(chatId, response);
       } else {
-        await sendTelegramMessage(chatId, "❌ Nenhum item encontrado com esse nome.");
+        const { data: inventory, error } = await supabase
+          .from('inventory')
+          .select('*')
+          .eq('household_id', householdId);
+
+        if (error) throw error;
+
+        const normalizedSearch = normalize(itemName);
+        const match = inventory?.find(it => normalize(it.name) === normalizedSearch);
+
+        if (match) {
+          const { error: deleteError } = await supabase
+            .from('inventory')
+            .delete()
+            .eq('id', match.id);
+
+          if (deleteError) throw deleteError;
+
+          await sendTelegramMessage(chatId, `🗑️ ${match.name} removido do estoque.`);
+        } else {
+          await sendTelegramMessage(chatId, "❌ Nenhum item encontrado com esse nome.");
+        }
       }
     }
     // 6. Comando: lista

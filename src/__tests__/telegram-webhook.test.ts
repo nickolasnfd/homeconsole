@@ -737,4 +737,239 @@ describe('Telegram Webhook Serverless Function', () => {
     const tgPayload = JSON.parse(tgCall![1].body);
     expect(tgPayload.text).toContain('Use o formato: comprei: arroz 2');
   });
+
+  it('+ com múltiplos itens deve adicionar todos como faltando', async () => {
+    const { createClient: mockCreateClient } = await import('@supabase/supabase-js');
+    const mockSupabase = mockCreateClient() as any;
+
+    const capturedInserts: any[] = [];
+    const capturedUpdates: any[] = [];
+
+    mockSupabase.from.mockImplementation((table: string) => {
+      const builder = {
+        select: () => builder,
+        eq: (...args: any[]) => builder,
+        limit: () => builder,
+        maybeSingle: () => {
+          if (table === 'telegram_authorized_chats') {
+            return Promise.resolve({ data: { household_id: 'house-123', user_name: 'Nickolas' }, error: null });
+          }
+          return Promise.resolve({ data: null, error: null });
+        },
+        single: () => {
+          if (table === 'telegram_authorized_chats') {
+            return Promise.resolve({ data: { household_id: 'house-123', user_name: 'Nickolas' }, error: null });
+          }
+          return Promise.resolve({ data: null, error: new Error('Not found') });
+        },
+        insert: (payload: any) => {
+          capturedInserts.push(payload);
+          return Promise.resolve({ error: null });
+        },
+        update: (payload: any) => {
+          capturedUpdates.push(payload);
+          return {
+            eq: () => Promise.resolve({ error: null })
+          };
+        },
+        then: (onfulfilled: any) => {
+          if (table === 'inventory') {
+            return Promise.resolve({
+              data: [
+                { id: 'i-feijao', name: 'Feijão', current_qty: 2, min_threshold: 3, category: 'Alimentos' }
+              ],
+              error: null
+            }).then(onfulfilled);
+          }
+          return Promise.resolve({ data: [], error: null }).then(onfulfilled);
+        }
+      };
+      return builder;
+    });
+
+    const req = {
+      method: 'POST',
+      body: { message: { chat: { id: 123456 }, text: '+ arroz, feijão, sabão' } }
+    } as any;
+
+    let resSent = '';
+    const res = {
+      status: (s: number) => res,
+      send: (s: string) => { resSent = s; return res; }
+    } as any;
+
+    await handler(req, res);
+
+    expect(resSent).toBe('OK');
+    expect(capturedUpdates.length).toBe(1);
+    expect(capturedUpdates[0].current_qty).toBe(0);
+    expect(capturedInserts.length).toBe(2);
+    expect(capturedInserts[0].name).toBe('arroz');
+    expect(capturedInserts[1].name).toBe('sabão');
+
+    const tgCall = mockFetch.mock.calls.find((c: any) => c[0].includes('sendMessage'));
+    expect(tgCall).toBeDefined();
+    const tgPayload = JSON.parse(tgCall![1].body);
+    expect(tgPayload.text).toContain('✅ Adicionados como faltando:');
+    expect(tgPayload.text).toContain('• Arroz');
+    expect(tgPayload.text).toContain('• Feijão');
+    expect(tgPayload.text).toContain('• Sabão');
+  });
+
+  it('del: com múltiplos itens deve remover todos', async () => {
+    const { createClient: mockCreateClient } = await import('@supabase/supabase-js');
+    const mockSupabase = mockCreateClient() as any;
+
+    const capturedDeletes: string[] = [];
+
+    mockSupabase.from.mockImplementation((table: string) => {
+      const builder = {
+        select: () => builder,
+        eq: (...args: any[]) => {
+          if (table === 'inventory' && args[0] === 'id') {
+            capturedDeletes.push(args[1]);
+          }
+          return builder;
+        },
+        limit: () => builder,
+        maybeSingle: () => {
+          if (table === 'telegram_authorized_chats') {
+            return Promise.resolve({ data: { household_id: 'house-123', user_name: 'Nickolas' }, error: null });
+          }
+          return Promise.resolve({ data: null, error: null });
+        },
+        single: () => {
+          if (table === 'telegram_authorized_chats') {
+            return Promise.resolve({ data: { household_id: 'house-123', user_name: 'Nickolas' }, error: null });
+          }
+          return Promise.resolve({ data: null, error: new Error('Not found') });
+        },
+        delete: () => {
+          return {
+            eq: (col: string, val: string) => {
+              if (table === 'inventory' && col === 'id') {
+                capturedDeletes.push(val);
+              }
+              return Promise.resolve({ error: null });
+            }
+          };
+        },
+        then: (onfulfilled: any) => {
+          if (table === 'inventory') {
+            return Promise.resolve({
+              data: [
+                { id: 'i-arroz', name: 'Arroz', current_qty: 2, min_threshold: 5, category: 'Alimentos' },
+                { id: 'i-feijao', name: 'Feijão', current_qty: 2, min_threshold: 5, category: 'Alimentos' }
+              ],
+              error: null
+            }).then(onfulfilled);
+          }
+          return Promise.resolve({ data: [], error: null }).then(onfulfilled);
+        }
+      };
+      return builder;
+    });
+
+    const req = {
+      method: 'POST',
+      body: { message: { chat: { id: 123456 }, text: 'del: arroz, feijão' } }
+    } as any;
+
+    let resSent = '';
+    const res = {
+      status: (s: number) => res,
+      send: (s: string) => { resSent = s; return res; }
+    } as any;
+
+    await handler(req, res);
+
+    expect(resSent).toBe('OK');
+    expect(capturedDeletes).toContain('i-arroz');
+    expect(capturedDeletes).toContain('i-feijao');
+
+    const tgCall = mockFetch.mock.calls.find((c: any) => c[0].includes('sendMessage'));
+    expect(tgCall).toBeDefined();
+    const tgPayload = JSON.parse(tgCall![1].body);
+    expect(tgPayload.text).toContain('🗑️ Removidos do estoque:');
+    expect(tgPayload.text).toContain('• Arroz');
+    expect(tgPayload.text).toContain('• Feijão');
+    expect(tgPayload.text).not.toContain('Não encontrados:');
+  });
+
+  it('del: com mix de encontrados e não encontrados deve reportar seções separadas', async () => {
+    const { createClient: mockCreateClient } = await import('@supabase/supabase-js');
+    const mockSupabase = mockCreateClient() as any;
+
+    const capturedDeletes: string[] = [];
+
+    mockSupabase.from.mockImplementation((table: string) => {
+      const builder = {
+        select: () => builder,
+        eq: (...args: any[]) => {
+          if (table === 'inventory' && args[0] === 'id') {
+            capturedDeletes.push(args[1]);
+          }
+          return builder;
+        },
+        limit: () => builder,
+        maybeSingle: () => {
+          if (table === 'telegram_authorized_chats') {
+            return Promise.resolve({ data: { household_id: 'house-123', user_name: 'Nickolas' }, error: null });
+          }
+          return Promise.resolve({ data: null, error: null });
+        },
+        single: () => {
+          if (table === 'telegram_authorized_chats') {
+            return Promise.resolve({ data: { household_id: 'house-123', user_name: 'Nickolas' }, error: null });
+          }
+          return Promise.resolve({ data: null, error: new Error('Not found') });
+        },
+        delete: () => {
+          return {
+            eq: (col: string, val: string) => {
+              if (table === 'inventory' && col === 'id') {
+                capturedDeletes.push(val);
+              }
+              return Promise.resolve({ error: null });
+            }
+          };
+        },
+        then: (onfulfilled: any) => {
+          if (table === 'inventory') {
+            return Promise.resolve({
+              data: [
+                { id: 'i-arroz', name: 'Arroz', current_qty: 2, min_threshold: 5, category: 'Alimentos' }
+              ],
+              error: null
+            }).then(onfulfilled);
+          }
+          return Promise.resolve({ data: [], error: null }).then(onfulfilled);
+        }
+      };
+      return builder;
+    });
+
+    const req = {
+      method: 'POST',
+      body: { message: { chat: { id: 123456 }, text: 'del: arroz, feijão, sabão' } }
+    } as any;
+
+    let resSent = '';
+    const res = {
+      status: (s: number) => res,
+      send: (s: string) => { resSent = s; return res; }
+    } as any;
+
+    await handler(req, res);
+
+    expect(resSent).toBe('OK');
+    expect(capturedDeletes).toContain('i-arroz');
+    expect(capturedDeletes).not.toContain('i-feijao');
+
+    const tgCall = mockFetch.mock.calls.find((c: any) => c[0].includes('sendMessage'));
+    expect(tgCall).toBeDefined();
+    const tgPayload = JSON.parse(tgCall![1].body);
+    expect(tgPayload.text).toContain('🗑️ Removidos do estoque:\n• Arroz');
+    expect(tgPayload.text).toContain('❌ Não encontrados:\n• Feijão\n• Sabão');
+  });
 });
