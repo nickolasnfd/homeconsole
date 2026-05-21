@@ -68,7 +68,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .eq('chat_id', chatId)
     .single();
 
-  if (authError || !authChat) {
+  if (authError) {
+    console.error(`Erro ao consultar chat_id no banco:`, authError);
+    return res.status(500).json({ error: 'Database query failed', details: authError.message });
+  }
+
+  if (!authChat) {
     console.warn(`Unauthorized chat_id: ${chatId}. Message ignored.`);
     return res.status(200).send('OK (unauthorized)');
   }

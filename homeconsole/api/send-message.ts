@@ -30,7 +30,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .eq('chat_id', String(chatId))
     .single();
 
-  if (authError || !authChat) {
+  if (authError) {
+    if (authError.code === 'PGRST116') {
+      return res.status(403).json({ error: 'Unauthorized chat ID' });
+    }
+    console.error('Database error in send-message validation:', authError);
+    return res.status(500).json({ error: 'Database verification failed', details: authError.message });
+  }
+
+  if (!authChat) {
     return res.status(403).json({ error: 'Unauthorized chat ID' });
   }
 
