@@ -64,17 +64,30 @@ export default function Settings() {
 
       const householdId = profile.household_id;
 
+      // Sanitizar o Chat ID para conter apenas números e sinal de menos (para grupos)
+      const cleanChatId = chatId.replace(/[^0-9-]/g, '');
+
+      if (!cleanChatId) {
+        throw new Error("Chat ID inválido. Deve conter apenas números.");
+      }
+
       // 2. Deletar chat_id antigo associado a este usuário para evitar órfãos
       await supabase
         .from('telegram_authorized_chats')
         .delete()
         .eq('user_id', user.id);
 
+      // Limpar também qualquer registro que já tenha este chat_id (ex: fix manual com user_id nulo)
+      await supabase
+        .from('telegram_authorized_chats')
+        .delete()
+        .eq('chat_id', cleanChatId);
+
       // 3. Inserir o novo chat_id
       const { error: insertError } = await supabase
         .from('telegram_authorized_chats')
         .insert({
-          chat_id: chatId.trim(),
+          chat_id: cleanChatId,
           household_id: householdId,
           user_id: user.id,
           user_name: user.email?.split('@')[0] || 'Usuário'
