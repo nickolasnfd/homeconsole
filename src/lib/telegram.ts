@@ -24,7 +24,10 @@ export async function sendTelegramMessageToChat(chatId: string, text: string): P
 
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.error || "Erro ao enviar mensagem via proxy.");
+    const errMsg = errData.details
+      ? `${errData.error} (${errData.details})`
+      : (errData.error || "Erro ao enviar mensagem via proxy.");
+    throw new Error(errMsg);
   }
 
   return true;
