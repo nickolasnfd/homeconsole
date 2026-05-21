@@ -158,6 +158,55 @@ describe('Telegram Webhook Serverless Function', () => {
     expect(payload.text).toContain('RESUMO DA CENTRAL');
   });
 
+  it('should process ajuda or /help command and return list of commands', async () => {
+    const { createClient: mockCreateClient } = await import('@supabase/supabase-js');
+    const mockSupabase = mockCreateClient() as any;
+    
+    mockSupabase.from.mockImplementation((table: string) => {
+      const builder = {
+        select: () => builder,
+        eq: () => builder,
+        limit: () => builder,
+        maybeSingle: () => {
+          if (table === 'telegram_authorized_chats') {
+            return Promise.resolve({ data: { household_id: 'house-123', user_name: 'Nickolas' }, error: null });
+          }
+          return Promise.resolve({ data: null, error: null });
+        }
+      };
+      return builder;
+    });
+
+    let resStatus = 200;
+    let resSent = '';
+
+    const req = {
+      method: 'POST',
+      body: {
+        message: {
+          chat: { id: 123456 },
+          text: '/help'
+        }
+      }
+    } as any;
+
+    const res = {
+      status: (s: number) => { resStatus = s; return res; },
+      send: (s: string) => { resSent = s; return res; }
+    } as any;
+
+    await handler(req, res);
+
+    expect(resStatus).toBe(200);
+    expect(resSent).toBe('OK');
+    const tgCall = mockFetch.mock.calls.find((c: any) => c[0].includes('sendMessage') && c[1].body.includes('Comandos da Central'));
+    expect(tgCall).toBeDefined();
+    const payload = JSON.parse(tgCall![1].body);
+    expect(payload.text).toContain('Comandos da Central');
+    expect(payload.text).toContain('ESTOQUE');
+    expect(payload.text).toContain('MANUTENÇÃO');
+  });
+
   it('feito: com tarefa one_time deve setar completed = true', async () => {
     const { createClient: mockCreateClient } = await import('@supabase/supabase-js');
     const mockSupabase = mockCreateClient() as any;

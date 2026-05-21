@@ -88,6 +88,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const userName = authChat.user_name || 'Usuário';
 
   try {
+    // 0. Comando: ajuda ou /help
+    if (text === 'ajuda' || text === '/help') {
+      const helpText = `🤖 *Comandos da Central:*
+
+*ESTOQUE:*
+• \`+ <item> <qtd>\`: Adiciona itens. Ex: \`+ arroz\`, \`+ feijão 2\`. Aceita vários separados por vírgula.
+• \`- <item>\`: Marca que um item não está mais faltando.
+• \`del: <item>\`: Deleta permanentemente itens do estoque.
+• \`lista\`: Mostra a lista de compras (itens faltando agrupados).
+• \`comprei: <item> <qtd>\`: Atualiza a quantidade do item comprado.
+
+*MANUTENÇÃO:*
+• \`feito: <tarefa>\`: Marca uma tarefa de manutenção como concluída.
+
+*GERAL:*
+• \`status\`: Resumo rápido do estoque e tarefas pendentes.
+• \`/help\` ou \`ajuda\`: Mostra esta mensagem.`;
+
+      await sendTelegramMessage(chatId, helpText);
+      return res.status(200).send('OK');
+    }
+
     // 1. Comando: + <item>
     if (text.startsWith('+')) {
       const itemName = text.slice(1).trim();
