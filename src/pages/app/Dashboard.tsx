@@ -11,20 +11,33 @@ export default function Dashboard() {
   const maintenance = useTable<any>("maintenance", { column: "next_due_date" });
   const [sendingReport, setSendingReport] = useState(false);
 
-  const lowStock = (inventory.data ?? []).filter((i) => Number(i.current_qty) < Number(i.min_threshold));
-  const criticalMaint = (maintenance.data ?? []).filter((m) => daysUntil(m.next_due_date) < 7);
-  const overdueMaint = (maintenance.data ?? []).filter((m) => !m.completed && daysUntil(m.next_due_date) < 0);
+  const lowStock = (inventory.data ?? []).filter(
+    (i) => Number(i.current_qty) < Number(i.min_threshold)
+  );
+  const criticalMaint = (maintenance.data ?? []).filter(
+    (m) => daysUntil(m.next_due_date) < 7
+  );
+  const overdueMaint = (maintenance.data ?? []).filter(
+    (m) => !m.completed && daysUntil(m.next_due_date) < 0
+  );
+
   const alerts = [
-    overdueMaint.length > 0 && { to: "/maintenance", icon: Wrench, tone: "destructive" as const, label: `${overdueMaint.length} manutenç${overdueMaint.length === 1 ? "ão atrasada" : "ões atrasadas"}` },
-    lowStock.length > 0 && { to: "/inventory", icon: Package, tone: "warning" as const, label: `${lowStock.length} ${lowStock.length === 1 ? "item em falta" : "itens em falta"}` },
-  ].filter(Boolean) as { to: string; icon: any; tone: "destructive" | "warning" | "primary"; label: string }[];
+    overdueMaint.length > 0 && {
+      to: "/maintenance",
+      tone: "red" as const,
+      label: `${overdueMaint.length} manutenç${overdueMaint.length === 1 ? "ão atrasada" : "ões atrasadas"}`,
+    },
+    lowStock.length > 0 && {
+      to: "/inventory",
+      tone: "amber" as const,
+      label: `${lowStock.length} ${lowStock.length === 1 ? "item em falta" : "itens em falta"}`,
+    },
+  ].filter(Boolean) as { to: string; tone: "red" | "amber"; label: string }[];
 
   const handleSendTelegramReport = async () => {
     setSendingReport(true);
     try {
       let text = `🏠 *CENTRAL RESIDENCIAL - STATUS GERAL*\n\n`;
-
-      // 1. Inventory Section
       if (lowStock.length > 0) {
         text += `📦 *Estoque (Itens em Falta):*\n`;
         lowStock.forEach((i) => {
@@ -34,105 +47,159 @@ export default function Dashboard() {
       } else {
         text += `🟢 *Estoque:* Nível de suprimentos saudável!\n\n`;
       }
-
-      // 2. Maintenance Section
       const pendingTasks = (maintenance.data ?? []).filter((m) => !m.completed);
       if (pendingTasks.length > 0) {
         text += `🔧 *Manutenção (Tarefas Pendentes):*\n`;
         pendingTasks.forEach((m) => {
           const days = daysUntil(m.next_due_date);
-          const statusText = days < 0 ? `🚨 ${Math.abs(days)}d atrasada` : days === 0 ? `⚠️ vence hoje` : `📅 em ${days}d`;
+          const statusText =
+            days < 0 ? `🚨 ${Math.abs(days)}d atrasada`
+            : days === 0 ? `⚠️ vence hoje`
+            : `📅 em ${days}d`;
           text += `• ${m.title}: _${statusText}_\n`;
         });
       } else {
         text += `🟢 *Manutenção:* Nenhuma tarefa pendente!\n`;
       }
-
       await sendTelegramMessage(text);
-      toast.success("Relatório de status enviado para o Telegram!");
+      toast.success("Relatório enviado para o Telegram!");
     } catch (err: any) {
-      toast.error(err.message || "Erro ao enviar relatório para o Telegram.");
+      toast.error(err.message || "Erro ao enviar relatório.");
     } finally {
       setSendingReport(false);
     }
   };
 
+  const invTotal = (inventory.data ?? []).length;
+  const maintData = maintenance.data ?? [];
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
+      {/* Alertas */}
       {alerts.length > 0 && (
         <div className="space-y-2">
-          {alerts.map((a, i) => {
-            const Icon = a.icon;
-            const toneCls =
-              a.tone === "destructive" ? "bg-destructive/10 text-destructive border-destructive/30"
-              : a.tone === "warning" ? "bg-warning/15 text-warning border-warning/30"
-              : "bg-primary/10 text-primary border-primary/30";
-            return (
-              <Link key={i} to={a.to} className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 ${toneCls} active:scale-[0.99] transition-transform`}>
-                <Icon className="h-4 w-4 shrink-0" />
-                <span className="text-sm font-semibold flex-1 min-w-0 truncate">{a.label}</span>
-                <span className="text-xs opacity-70">Ver →</span>
-              </Link>
-            );
-          })}
+          {alerts.map((a, i) => (
+            <Link
+              key={i}
+              to={a.to}
+              className={`flex items-center gap-3 rounded-xl border px-3.5 py-2.5 active:scale-[0.99] transition-transform ${
+                a.tone === "red"
+                  ? "bg-destructive/10 border-destructive/20 text-destructive"
+                  : "bg-warning/10 border-warning/20 text-warning"
+              }`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${
+                  a.tone === "red"
+                    ? "bg-destructive shadow-[0_0_6px_hsl(0_100%_64%)]"
+                    : "bg-warning"
+                }`}
+              />
+              <span className="font-body text-sm font-medium flex-1 min-w-0 truncate">
+                {a.label}
+              </span>
+              <span className="font-body text-xs opacity-60">›</span>
+            </Link>
+          ))}
         </div>
       )}
 
-      {/* Relatório Telegram Quick Action */}
-      <div className="flex items-center justify-between gap-3 bg-card/40 backdrop-blur-md border border-border/60 rounded-[22px] p-4 shadow-card">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-full bg-sky-500/10 text-sky-400 flex items-center justify-center shrink-0">
-            <MessageSquare className="h-4 w-4" strokeWidth={2.2} />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-foreground">Relatório Telegram</p>
-            <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Envie o status residencial consolidado para seu celular</p>
-          </div>
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-3">
+        <StatCard
+          label="Estoque"
+          value={invTotal}
+          sub={lowStock.length > 0 ? `${lowStock.length} abaixo do mínimo` : "todos em ordem"}
+          tone={lowStock.length > 0 ? "red" : "cyan"}
+          pct={invTotal > 0 ? Math.round((lowStock.length / invTotal) * 100) : 0}
+          to="/inventory"
+        />
+        <MaintStatCard items={maintData} />
+      </div>
+
+      {/* Relatório Telegram */}
+      <div className="relative overflow-hidden bg-card/60 border border-primary/10 rounded-xl p-4 card-highlight flex items-center gap-3">
+        <div className="h-9 w-9 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shrink-0">
+          <MessageSquare className="h-4 w-4 text-sky-400" strokeWidth={2.2} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-body text-sm font-semibold text-foreground">Relatório Telegram</p>
+          <p className="font-body text-[11px] text-muted-foreground mt-0.5">
+            Status consolidado para o celular
+          </p>
         </div>
         <button
           onClick={handleSendTelegramReport}
           disabled={sendingReport}
-          className="h-8 px-3.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors active:scale-95 disabled:opacity-50 cursor-pointer shadow-sm"
+          className="h-8 px-3.5 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/25 text-sky-400 font-body text-xs font-semibold flex items-center gap-1.5 transition-colors active:scale-95 disabled:opacity-50 cursor-pointer"
         >
           <Send className="h-3.5 w-3.5" />
-          {sendingReport ? "Enviando..." : "Enviar"}
+          {sendingReport ? "..." : "Enviar"}
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div className="space-y-5">
-          <StockHealthCard
-            total={(inventory.data ?? []).length}
-            lowCount={lowStock.length}
-          />
-
-          {criticalMaint.length > 0 && (
-            <Section title="Tarefas próximas" subtitle="Próximos 7 dias">
-              <div className="space-y-2">
-                {criticalMaint.slice(0, 3).map((m) => (
-                  <div key={m.id} className="flex items-center justify-between bg-card rounded-2xl p-3 shadow-card">
-                    <div>
-                      <p className="font-semibold text-sm">{m.title}</p>
-                      <p className="text-xs text-muted-foreground">Vence {formatDate(m.next_due_date)}</p>
-                    </div>
-                    <AlertTriangle className="h-4 w-4 text-destructive" />
-                  </div>
-                ))}
+      {/* Tarefas críticas */}
+      {criticalMaint.length > 0 && (
+        <div className="relative overflow-hidden bg-card/60 border border-primary/10 rounded-xl p-4 card-highlight space-y-1">
+          <div className="flex items-baseline justify-between mb-3">
+            <h2 className="font-display text-sm font-semibold text-foreground flex items-center gap-2">
+              <Wrench className="h-4 w-4 text-muted-foreground" />
+              Próximas 7 dias
+            </h2>
+            <span className="label-upper text-muted-foreground">{criticalMaint.length} tarefa{criticalMaint.length !== 1 ? "s" : ""}</span>
+          </div>
+          {criticalMaint.slice(0, 3).map((m) => (
+            <div key={m.id} className="flex items-center justify-between py-2 border-t border-primary/5 first:border-0">
+              <div className="min-w-0 flex-1">
+                <p className="font-body text-sm font-medium truncate">{m.title}</p>
+                <p className="font-body text-[11px] text-muted-foreground">
+                  Vence {formatDate(m.next_due_date)}
+                </p>
               </div>
-            </Section>
-          )}
+              <AlertTriangle className="h-3.5 w-3.5 text-warning ml-3 shrink-0" />
+            </div>
+          ))}
         </div>
-
-        <div className="space-y-5">
-          <MaintenanceDonutCard items={maintenance.data ?? []} />
-        </div>
-      </div>
+      )}
     </div>
   );
 }
 
-function MaintenanceDonutCard({ items }: { items: any[] }) {
-  const buckets = useMemo(() => {
+function StatCard({
+  label, value, sub, tone, pct, to,
+}: {
+  label: string; value: number; sub: string;
+  tone: "cyan" | "red" | "amber"; pct: number; to: string;
+}) {
+  const valueColor =
+    tone === "red" ? "text-destructive"
+    : tone === "amber" ? "text-warning"
+    : "text-primary";
+  const barColor =
+    tone === "red" ? "bg-destructive"
+    : tone === "amber" ? "bg-warning"
+    : "bg-primary";
+
+  return (
+    <Link
+      to={to}
+      className="relative overflow-hidden bg-card/60 border border-primary/10 rounded-xl p-4 card-highlight block active:scale-[0.98] transition-transform"
+    >
+      <p className="label-upper text-muted-foreground mb-2">{label}</p>
+      <p className={`font-display text-4xl font-bold leading-none ${valueColor}`}>{value}</p>
+      <p className="font-body text-[11px] text-muted-foreground mt-1.5 truncate">{sub}</p>
+      <div className="mt-3 h-[3px] bg-primary/5 rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+          style={{ width: `${Math.min(100, pct || (value > 0 ? 100 : 0))}%` }}
+        />
+      </div>
+    </Link>
+  );
+}
+
+function MaintStatCard({ items }: { items: any[] }) {
+  const { overdue, soon, ok, done } = useMemo(() => {
     let overdue = 0, soon = 0, ok = 0, done = 0;
     items.forEach((m) => {
       if (m.completed) { done++; return; }
@@ -144,212 +211,44 @@ function MaintenanceDonutCard({ items }: { items: any[] }) {
     return { overdue, soon, ok, done };
   }, [items]);
 
-  const total = items.length;
-  const segments = [
-    { key: "overdue", label: "Atrasadas", value: buckets.overdue, color: "hsl(var(--destructive))" },
-    { key: "soon", label: "Próximas (7 dias)", value: buckets.soon, color: "hsl(var(--warning))" },
-    { key: "ok", label: "Em dia", value: buckets.ok, color: "hsl(var(--primary))" },
-    { key: "done", label: "Concluídas", value: buckets.done, color: "hsl(var(--success))" },
-  ];
-
-  // Donut math
-  const size = 132;
-  const stroke = 14;
-  const r = (size - stroke) / 2;
-  const cx = size / 2;
-  const cy = size / 2;
-  const C = 2 * Math.PI * r;
-
-  let offset = 0;
-  const arcs = segments.map((s) => {
-    const frac = total > 0 ? s.value / total : 0;
-    const dash = frac * C;
-    const arc = {
-      ...s,
-      dasharray: `${dash} ${C - dash}`,
-      dashoffset: -offset,
-    };
-    offset += dash;
-    return arc;
-  });
-
-  const headline = buckets.overdue > 0
-    ? { label: "Atrasadas", value: buckets.overdue, tone: "text-destructive" }
-    : buckets.soon > 0
-    ? { label: "Próximas", value: buckets.soon, tone: "text-warning" }
-    : { label: "Em dia", value: buckets.ok, tone: "text-success" };
+  const headline =
+    overdue > 0 ? { value: overdue, label: "Atrasadas", cls: "text-destructive" }
+    : soon > 0  ? { value: soon,   label: "Em breve",  cls: "text-warning" }
+    : { value: ok, label: "Em dia", cls: "text-success" };
 
   return (
     <Link
       to="/maintenance"
-      className="block bg-card border border-border/60 rounded-[22px] p-4 shadow-card active:scale-[0.99] transition-transform"
+      className="relative overflow-hidden bg-card/60 border border-primary/10 rounded-xl p-4 card-highlight block active:scale-[0.98] transition-transform"
     >
-      <div className="flex items-baseline justify-between mb-3">
-        <h2 className="text-sm font-semibold flex items-center gap-2">
-          <Wrench className="h-4 w-4 text-muted-foreground" />
-          Manutenções
-        </h2>
-        <span className="text-[11px] text-muted-foreground tabular-nums">{total} no total</span>
+      <p className="label-upper text-muted-foreground mb-2">Manutenção</p>
+      <p className={`font-display text-4xl font-bold leading-none ${headline.cls}`}>
+        {headline.value}
+      </p>
+      <p className="font-body text-[11px] text-muted-foreground mt-1.5">{headline.label}</p>
+      <div className="mt-3 flex gap-1">
+        {overdue > 0 && (
+          <div
+            className="h-[3px] rounded-full bg-destructive"
+            style={{ flex: overdue }}
+          />
+        )}
+        {soon > 0 && (
+          <div className="h-[3px] rounded-full bg-warning" style={{ flex: soon }} />
+        )}
+        {ok > 0 && (
+          <div className="h-[3px] rounded-full bg-success" style={{ flex: ok }} />
+        )}
+        {done > 0 && (
+          <div
+            className="h-[3px] rounded-full bg-muted-foreground/30"
+            style={{ flex: done }}
+          />
+        )}
+        {items.length === 0 && (
+          <div className="h-[3px] rounded-full bg-primary/5 flex-1" />
+        )}
       </div>
-
-      {total === 0 ? (
-        <p className="text-xs text-muted-foreground py-4 text-center">Nenhuma manutenção cadastrada.</p>
-      ) : (
-        <div className="flex items-center gap-4">
-          <div className="relative shrink-0" style={{ width: size, height: size }} aria-label="Distribuição de manutenções por status">
-            <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
-              <circle cx={cx} cy={cy} r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth={stroke} />
-              {arcs.map((a) => a.value > 0 && (
-                <circle
-                  key={a.key}
-                  cx={cx} cy={cy} r={r}
-                  fill="none"
-                  stroke={a.color}
-                  strokeWidth={stroke}
-                  strokeDasharray={a.dasharray}
-                  strokeDashoffset={a.dashoffset}
-                  strokeLinecap="butt"
-                  style={{ transition: "stroke-dasharray 400ms ease" }}
-                />
-              ))}
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className={`text-2xl font-bold tabular-nums leading-none ${headline.tone}`}>{headline.value}</span>
-              <span className="text-[10px] text-muted-foreground mt-1">{headline.label}</span>
-            </div>
-          </div>
-
-          <ul className="flex-1 min-w-0 space-y-1.5">
-            {segments.map((s) => {
-              const pct = total > 0 ? Math.round((s.value / total) * 100) : 0;
-              return (
-                <li key={s.key} className="flex items-center gap-2 text-xs">
-                  <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: s.color }} />
-                  <span className="flex-1 min-w-0 truncate text-muted-foreground">{s.label}</span>
-                  <span className="font-semibold tabular-nums">{s.value}</span>
-                  <span className="text-muted-foreground tabular-nums w-9 text-right">{pct}%</span>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
-    </Link>
-  );
-}
-
-function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
-  return (
-    <section className="bg-card border border-border/60 rounded-[22px] p-4 shadow-card">
-      <div className="flex items-baseline justify-between mb-3">
-        <h2 className="text-sm font-semibold">{title}</h2>
-        {subtitle && <span className="text-[11px] text-muted-foreground">{subtitle}</span>}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function InventoryMiniChart({ data }: { data: any[] }) {
-  if (!data.length) return <p className="text-xs text-muted-foreground py-4 text-center">Nenhum item ainda.</p>;
-  return (
-    <div className="space-y-2.5">
-      {data.map((i) => {
-        const ratio = i.min_threshold > 0 ? Math.min(2, Number(i.current_qty) / Number(i.min_threshold)) : 1;
-        const pct = Math.min(100, ratio * 50);
-        const low = Number(i.current_qty) < Number(i.min_threshold);
-        return (
-          <div key={i.id}>
-            <div className="flex justify-between text-xs mb-1">
-              <span className="font-medium truncate pr-2">{i.name}</span>
-              <span className="text-muted-foreground tabular-nums">{i.current_qty} {i.unit}</span>
-            </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full ${low ? "bg-destructive" : "bg-gradient-primary"}`}
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function StockHealthCard({ total, lowCount }: { total: number; lowCount: number }) {
-  const pct = total > 0 ? Math.round((lowCount / total) * 100) : 0;
-  let level: "good" | "attention" | "critical" = "good";
-  if (pct > 50) level = "critical";
-  else if (pct >= 20) level = "attention";
-
-  const cfg = {
-    good: {
-      label: "Bom nível",
-      desc: "Estoque saudável",
-      tone: "bg-success/15 text-success border-success/30",
-      bar: "bg-success",
-      dot: "bg-success",
-    },
-    attention: {
-      label: "Atenção",
-      desc: "Alguns itens precisam de reposição",
-      tone: "bg-warning/15 text-warning border-warning/30",
-      bar: "bg-warning",
-      dot: "bg-warning",
-    },
-    critical: {
-      label: "Crítico",
-      desc: "Muitos itens em falta",
-      tone: "bg-destructive/10 text-destructive border-destructive/30",
-      bar: "bg-destructive",
-      dot: "bg-destructive",
-    },
-  }[level];
-
-  return (
-    <Link
-      to="/inventory"
-      className="block bg-card border border-border/60 rounded-[22px] p-4 shadow-card active:scale-[0.99] transition-transform"
-    >
-      <div className="flex items-baseline justify-between mb-3">
-        <h2 className="text-sm font-semibold">Níveis de estoque</h2>
-        <span className="text-[11px] text-muted-foreground tabular-nums">{lowCount}/{total} em falta</span>
-      </div>
-
-      {total === 0 ? (
-        <p className="text-xs text-muted-foreground py-2 text-center">Nenhum item cadastrado.</p>
-      ) : (
-        <>
-          <div className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 ${cfg.tone}`}>
-            <span className={`h-2.5 w-2.5 rounded-full ${cfg.dot} shadow-[0_0_0_3px_hsl(var(--background))]`} />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold leading-tight">{cfg.label}</p>
-              <p className="text-[11px] opacity-80 truncate">{cfg.desc}</p>
-            </div>
-            <span className="text-base font-bold tabular-nums">{pct}%</span>
-          </div>
-
-          <div className="mt-3 h-1.5 bg-muted rounded-full overflow-hidden flex">
-            <div className="h-full bg-success/70" style={{ width: "20%" }} />
-            <div className="h-full bg-warning/70" style={{ width: "30%" }} />
-            <div className="h-full bg-destructive/70" style={{ width: "50%" }} />
-          </div>
-          <div className="relative mt-1 h-3">
-            <div
-              className="absolute -top-[7px] h-3 w-0.5 bg-foreground rounded-full"
-              style={{ left: `calc(${Math.min(100, pct)}% - 1px)` }}
-              aria-hidden
-            />
-          </div>
-
-          <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
-            <span>Bom &lt;20%</span>
-            <span>Atenção 20-50%</span>
-            <span>Crítico &gt;50%</span>
-          </div>
-        </>
-      )}
     </Link>
   );
 }
