@@ -51,7 +51,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const activeIndex = useMemo(() => {
     if (pathname === "/") return 2;
     const idx = tabs.findIndex((t) => t.to !== "/" && pathname.startsWith(t.to));
-    return idx >= 0 ? idx : 2;
+    return idx;
   }, [pathname]);
 
   const renderMenu = (sizeClass = "h-10 w-10") => (
@@ -62,7 +62,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             "rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center hover:bg-primary/15 active:scale-95 transition-all duration-200 cursor-pointer shrink-0",
             sizeClass
           )}
-          aria-label="Menu"
+          aria-label="Painel de controle"
         >
           <Home className="h-4 w-4 text-primary" strokeWidth={2.2} />
         </button>
@@ -124,9 +124,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             {renderMenu("h-10 w-10")}
             <div className="min-w-0">
               <p className="label-upper text-primary">Console</p>
-              <h1 className="font-display text-sm font-bold text-foreground tracking-tight leading-tight">
+              <p className="font-display text-sm font-bold text-foreground tracking-tight leading-tight">
                 Central Residencial
-              </h1>
+              </p>
             </div>
           </div>
 
@@ -191,14 +191,16 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="max-w-md mx-auto px-4 pb-4">
           <div className="relative bg-card/95 backdrop-blur-xl border border-primary/20 rounded-[22px] shadow-elevated grid grid-cols-4 p-1.5">
             {/* Pill deslizante */}
-            <div
-              aria-hidden
-              className="absolute top-1.5 bottom-1.5 rounded-[16px] bg-primary/10 border border-primary/25 shadow-[0_0_16px_hsl(172_100%_41%/0.08)] transition-[left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
-              style={{
-                width: "calc((100% - 12px) / 4)",
-                left: `calc(6px + ${activeIndex} * (100% - 12px) / 4)`,
-              }}
-            />
+            {activeIndex >= 0 && (
+              <div
+                aria-hidden
+                className="absolute top-1.5 bottom-1.5 rounded-[16px] bg-primary/10 border border-primary/25 shadow-[0_0_16px_hsl(172_100%_41%/0.08)] transition-[left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+                style={{
+                  width: "calc((100% - 12px) / 4)",
+                  left: `calc(6px + ${activeIndex} * (100% - 12px) / 4)`,
+                }}
+              />
+            )}
             {tabs.map((tab) => (
               <NavLink
                 key={tab.to}
@@ -207,7 +209,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 className={({ isActive }) =>
                   cn(
                     "relative z-10 flex flex-col items-center justify-center gap-1 py-2.5 rounded-[16px] transition-all",
-                    isActive ? "text-primary" : "text-muted-foreground/40"
+                    isActive ? "text-primary" : "text-muted-foreground/60"
                   )
                 }
               >
