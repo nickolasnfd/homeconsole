@@ -194,7 +194,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             {activeIndex >= 0 && (
               <div
                 aria-hidden
-                className="absolute top-1.5 bottom-1.5 rounded-[16px] bg-primary/10 border border-primary/25 shadow-[0_0_16px_hsl(172_100%_41%/0.08)] transition-[left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+                className="absolute top-1.5 bottom-1.5 rounded-[16px] bg-primary/10 border border-primary/25 shadow-[0_0_16px_hsl(172_100%_41%/0.08)] transition-[left] duration-300 ease-in-out"
                 style={{
                   width: "calc((100% - 12px) / 4)",
                   left: `calc(6px + ${activeIndex} * (100% - 12px) / 4)`,
