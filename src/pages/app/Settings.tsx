@@ -130,21 +130,21 @@ export default function Settings() {
 
   return (
     <div className="space-y-6">
-      <section className="bg-card border border-border/60 rounded-[22px] p-5 shadow-card">
+      <section className="relative overflow-hidden bg-card/60 border border-primary/10 rounded-xl p-5 card-highlight">
         <div className="flex items-center gap-4 mb-4">
-          <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+          <div className="h-11 w-11 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center">
             <UserIcon className="h-6 w-6" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold">Sua Conta</h2>
+            <h2 className="font-display text-sm font-semibold text-foreground">Sua Conta</h2>
             <p className="text-xs text-muted-foreground">{user?.email}</p>
           </div>
         </div>
 
         <div className="pt-4 border-t border-border/40">
           <Button
-            variant="destructive"
-            className="w-full gap-2 rounded-xl h-11 cursor-pointer"
+            variant="ghost"
+            className="w-full gap-2 rounded-xl h-11 cursor-pointer text-destructive hover:bg-destructive/10 hover:text-destructive border border-destructive/20"
             onClick={signOut}
           >
             <LogOut className="h-4 w-4" />
@@ -154,13 +154,13 @@ export default function Settings() {
       </section>
 
       {/* Telegram Section */}
-      <section className="bg-card border border-border/60 rounded-[22px] p-5 shadow-card space-y-4">
+      <section className="relative overflow-hidden bg-card/60 border border-primary/10 rounded-xl p-5 card-highlight space-y-4">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-sky-500/10 text-sky-400 flex items-center justify-center shrink-0">
             <MessageSquare className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold">Notificações do Telegram</h2>
+            <h2 className="font-display text-sm font-semibold text-foreground">Notificações do Telegram</h2>
             <p className="text-xs text-muted-foreground">Receba alertas e relatórios direto no seu celular</p>
           </div>
         </div>
@@ -222,8 +222,8 @@ export default function Settings() {
         </div>
       </section>
 
-      <section className="bg-card border border-border/60 rounded-[22px] p-5 shadow-card">
-        <h2 className="text-sm font-semibold mb-2">Sobre</h2>
+      <section className="relative overflow-hidden bg-card/60 border border-primary/10 rounded-xl p-5 card-highlight">
+        <h2 className="font-display text-sm font-semibold text-foreground mb-2">Sobre</h2>
         <p className="text-xs text-muted-foreground leading-relaxed">
           Central de Comando Residencial. Gerencie seu estoque e tarefas de manutenção de forma simples e segura.
         </p>

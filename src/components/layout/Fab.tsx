@@ -26,7 +26,7 @@ export function Fab() {
       <DialogTrigger asChild>
         <button
           aria-label="Adicionar novo registro"
-          className="fixed z-50 bottom-32 right-5 h-14 w-14 rounded-full bg-gradient-primary text-primary-foreground shadow-fab flex items-center justify-center active:scale-95 transition-transform"
+          className="fixed z-50 bottom-32 right-5 h-14 w-14 rounded-full bg-primary/15 border border-primary/30 text-primary shadow-glow flex items-center justify-center active:scale-95 transition-all hover:bg-primary/25 hover:shadow-[0_0_24px_hsl(172_100%_41%/0.4)]"
         >
           <Plus className="h-6 w-6" strokeWidth={2.6} />
         </button>

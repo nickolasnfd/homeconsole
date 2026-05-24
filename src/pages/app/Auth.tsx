@@ -56,64 +56,66 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col justify-center text-foreground px-5 relative overflow-hidden">
-      {/* Ambient glow */}
-      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-32 -left-20 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
-        <div className="absolute top-1/3 -right-24 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
-      </div>
-
       <div className="max-w-sm w-full mx-auto space-y-8">
+        {/* Logo */}
         <div className="flex flex-col items-center text-center space-y-4">
-          <div className="h-14 w-14 rounded-full bg-gradient-primary flex items-center justify-center shadow-glow">
-            <Home className="h-7 w-7 text-primary-foreground" strokeWidth={2.4} />
+          <div className="h-14 w-14 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center shadow-glow">
+            <Home className="h-6 w-6 text-primary" strokeWidth={2.2} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              {isSignUp ? "Criar Conta" : "Bem-vindo de volta"}
+            <p className="label-upper text-primary mb-2">Central de Comando</p>
+            <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">
+              {isSignUp ? "Criar Conta" : "Bem-vindo"}
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Central de Comando Residencial
+            <p className="font-body text-sm text-muted-foreground mt-1">
+              {isSignUp ? "Registre-se para continuar" : "Entre na sua residência"}
             </p>
           </div>
         </div>
 
-        <div className="bg-card/60 backdrop-blur-xl border border-border/60 rounded-[24px] p-6 shadow-elevated">
+        {/* Form */}
+        <div className="relative overflow-hidden bg-card/60 backdrop-blur-xl border border-primary/15 rounded-2xl p-6 card-highlight shadow-elevated">
           <form onSubmit={handleAuth} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs font-medium text-muted-foreground">E-mail</Label>
+              <label htmlFor="email" className="label-upper text-muted-foreground block">
+                E-mail
+              </label>
               <Input
                 id="email"
                 type="email"
                 placeholder="seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-background/50 h-11"
+                className="bg-background/50 border-primary/15 h-11 font-body rounded-xl focus:border-primary/40"
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-xs font-medium text-muted-foreground">Senha</Label>
+              <label htmlFor="password" className="label-upper text-muted-foreground block">
+                Senha
+              </label>
               <Input
                 id="password"
                 type="password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="bg-background/50 h-11"
+                className="bg-background/50 border-primary/15 h-11 font-body rounded-xl focus:border-primary/40"
               />
             </div>
-            <Button type="submit" className="w-full h-11 font-semibold mt-2" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full h-11 font-body font-semibold mt-2 bg-primary/15 hover:bg-primary/25 text-primary border border-primary/25 rounded-xl"
+              disabled={loading}
+            >
               {loading ? "Aguarde..." : isSignUp ? "Criar conta" : "Entrar"}
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm">
+          <div className="mt-6 text-center">
             <button
               type="button"
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setPassword("");
-              }}
-              className="text-primary font-medium hover:underline transition-all"
+              onClick={() => { setIsSignUp(!isSignUp); setPassword(""); }}
+              className="font-body text-sm text-primary/70 hover:text-primary transition-colors"
             >
               {isSignUp ? "Já tem uma conta? Faça login" : "Não tem conta? Crie uma"}
             </button>
