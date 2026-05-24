@@ -88,12 +88,12 @@ export default function Maintenance() {
     <div className="space-y-3">
       {addButton}
       <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
-        <TabsList className="grid grid-cols-5 w-full h-auto">
-          <TabsTrigger value="all" className="text-[11px] px-1">Todas<span className="ml-1 opacity-60">{data.length}</span></TabsTrigger>
-          <TabsTrigger value="overdue" className="text-[11px] px-1 data-[state=active]:text-destructive">Atrasadas<span className="ml-1 opacity-60">{counts.overdue}</span></TabsTrigger>
-          <TabsTrigger value="soon" className="text-[11px] px-1 data-[state=active]:text-warning">7 dias<span className="ml-1 opacity-60">{counts.soon}</span></TabsTrigger>
-          <TabsTrigger value="ok" className="text-[11px] px-1">Em dia<span className="ml-1 opacity-60">{counts.ok}</span></TabsTrigger>
-          <TabsTrigger value="done" className="text-[11px] px-1">Feitas<span className="ml-1 opacity-60">{counts.done}</span></TabsTrigger>
+        <TabsList className="grid grid-cols-5 w-full h-auto rounded-xl bg-card/60 border border-primary/10 p-1">
+          <TabsTrigger value="all" className="text-[10px] px-1 font-body font-semibold rounded-lg data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/20">Todas<span className="ml-1 opacity-60">{data.length}</span></TabsTrigger>
+          <TabsTrigger value="overdue" className="text-[10px] px-1 font-body font-semibold rounded-lg data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/20">Atrasadas<span className="ml-1 opacity-60">{counts.overdue}</span></TabsTrigger>
+          <TabsTrigger value="soon" className="text-[10px] px-1 font-body font-semibold rounded-lg data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/20">7 dias<span className="ml-1 opacity-60">{counts.soon}</span></TabsTrigger>
+          <TabsTrigger value="ok" className="text-[10px] px-1 font-body font-semibold rounded-lg data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/20">Em dia<span className="ml-1 opacity-60">{counts.ok}</span></TabsTrigger>
+          <TabsTrigger value="done" className="text-[10px] px-1 font-body font-semibold rounded-lg data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/20">Feitas<span className="ml-1 opacity-60">{counts.done}</span></TabsTrigger>
         </TabsList>
         <TabsContent value={filter} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
       {visible.length === 0 ? (
@@ -119,6 +119,11 @@ export default function Maintenance() {
           : m.frequency_unit === "months"
             ? `A cada ${Math.max(1, Math.round((m.frequency_days || 30) / 30))} mês(es)`
             : `A cada ${m.frequency_days}d`;
+        const barClass =
+          isDone ? "status-bar status-bar-muted"
+          : overdue ? "status-bar status-bar-red"
+          : critical ? "status-bar status-bar-amber"
+          : "status-bar status-bar-green";
         return (
           <div
             key={m.id}
@@ -126,29 +131,52 @@ export default function Maintenance() {
             tabIndex={0}
             onClick={() => setEditing(m)}
             onKeyDown={(e) => { if (e.key === "Enter") setEditing(m); }}
-            className="bg-card border border-border/60 rounded-2xl p-4 shadow-card cursor-pointer active:scale-[0.997] transition-transform"
+            className="relative overflow-hidden bg-card/60 border border-primary/10 rounded-xl p-3.5 cursor-pointer card-highlight active:scale-[0.99] transition-transform flex gap-3"
           >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold">{m.title}</p>
-                {m.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{m.description}</p>}
-                <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${tone}`}>{label}</span>
-                  <span className="text-xs text-muted-foreground">{freqLabel}</span>
-                  <span className="text-xs text-muted-foreground">• {priorityLabel(m.priority_level)}</span>
-                </div>
-                <p className="text-[11px] text-muted-foreground mt-1">Próxima: {formatDate(m.next_due_date)}</p>
+            {/* Barra lateral de status */}
+            <div className={barClass} />
+
+            {/* Conteúdo */}
+            <div className="flex-1 min-w-0">
+              <p className="font-body font-semibold text-sm">{m.title}</p>
+              {m.description && (
+                <p className="font-body text-[11px] text-muted-foreground mt-0.5 line-clamp-2">
+                  {m.description}
+                </p>
+              )}
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                <span className={`badge ${
+                  isDone ? "badge-cyan"
+                  : overdue ? "badge-red"
+                  : critical ? "badge-amber"
+                  : "badge-green"
+                }`}>{label}</span>
+                <span className="font-body text-[10px] text-muted-foreground">{freqLabel}</span>
+                <span className="font-body text-[10px] text-muted-foreground">· {priorityLabel(m.priority_level)}</span>
               </div>
-              <div className="flex flex-col gap-2">
-                {!isDone && (
-                  <button onClick={(e) => { e.stopPropagation(); complete(m); }} className="h-9 w-9 rounded-xl bg-success text-success-foreground active:scale-95 flex items-center justify-center" aria-label="Concluir">
-                    <CheckCircle2 className="h-4 w-4" />
-                  </button>
-                )}
-                <button onClick={(e) => { e.stopPropagation(); remove(m.id); }} className="h-9 w-9 rounded-xl bg-muted text-muted-foreground active:scale-95 flex items-center justify-center" aria-label="Excluir">
-                  <Trash2 className="h-4 w-4" />
+              <p className="font-body text-[10px] text-muted-foreground mt-1.5">
+                Próxima: {formatDate(m.next_due_date)}
+              </p>
+            </div>
+
+            {/* Ações */}
+            <div className="flex flex-col gap-1.5 shrink-0">
+              {!isDone && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); complete(m); }}
+                  className="h-8 w-8 rounded-lg bg-success/10 border border-success/25 text-success flex items-center justify-center active:scale-95 transition-all hover:bg-success/20"
+                  aria-label="Concluir"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
                 </button>
-              </div>
+              )}
+              <button
+                onClick={(e) => { e.stopPropagation(); remove(m.id); }}
+                className="h-8 w-8 rounded-lg bg-card border border-primary/10 text-muted-foreground flex items-center justify-center active:scale-95 transition-all hover:text-destructive hover:border-destructive/20"
+                aria-label="Excluir"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
             </div>
           </div>
         );
