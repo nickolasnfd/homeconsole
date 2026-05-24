@@ -1,0 +1,115 @@
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+
+<h2>Como deve funcionar a navegação?</h2>
+<p class="subtitle">A barra de navegação é o esqueleto do app — define a personalidade de cada tela</p>
+
+<div class="split">
+
+  <div class="mockup">
+    <div class="mockup-header">A — Bottom Nav com indicador ativo forte</div>
+    <div class="mockup-body" style="background:#070d14; padding:0; overflow:hidden; border-radius:8px; min-height:260px; display:flex; flex-direction:column; justify-content:space-between;">
+      <!-- Header -->
+      <div style="padding:16px 16px 8px; border-bottom:1px solid rgba(0,200,180,0.1);">
+        <div style="font-family:'Rajdhani',sans-serif; font-size:9px; font-weight:600; letter-spacing:0.3em; color:#00c8b4; text-transform:uppercase;">Início</div>
+        <div style="font-family:'Rajdhani',sans-serif; font-size:20px; font-weight:700; color:#e0fff8; line-height:1;">Central de Comando</div>
+      </div>
+      <!-- Content area -->
+      <div style="flex:1; padding:12px 16px; display:flex; flex-direction:column; gap:8px;">
+        <div style="background:rgba(0,200,180,0.06); border:1px solid rgba(0,200,180,0.12); border-radius:10px; padding:10px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-family:'Outfit',sans-serif; font-size:11px; color:#a0d8d0;">Estoque</span>
+          <span style="font-family:'Rajdhani',sans-serif; font-size:14px; font-weight:700; color:#00c8b4;">12 itens</span>
+        </div>
+        <div style="background:rgba(255,60,60,0.06); border:1px solid rgba(255,60,60,0.15); border-radius:10px; padding:10px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-family:'Outfit',sans-serif; font-size:11px; color:#d0a0a0;">Manutenção</span>
+          <span style="font-family:'Rajdhani',sans-serif; font-size:14px; font-weight:700; color:#ff5555;">2 atrasadas</span>
+        </div>
+      </div>
+      <!-- Bottom nav -->
+      <div style="background:#0d1a24; border-top:1px solid rgba(0,200,180,0.12); padding:8px 16px; display:grid; grid-template-columns:repeat(4,1fr); gap:4px;">
+        <div style="display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 0; border-radius:8px; background:rgba(0,200,180,0.1); border-bottom:2px solid #00c8b4;">
+          <span style="font-size:14px;">🏠</span>
+          <span style="font-family:'Outfit',sans-serif; font-size:8px; font-weight:600; color:#00c8b4;">Início</span>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 0;">
+          <span style="font-size:14px; opacity:0.4;">📦</span>
+          <span style="font-family:'Outfit',sans-serif; font-size:8px; color:#3a6060;">Estoque</span>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 0;">
+          <span style="font-size:14px; opacity:0.4;">🔧</span>
+          <span style="font-family:'Outfit',sans-serif; font-size:8px; color:#3a6060;">Tarefas</span>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 0;">
+          <span style="font-size:14px; opacity:0.4;">⚙️</span>
+          <span style="font-family:'Outfit',sans-serif; font-size:8px; color:#3a6060;">Ajustes</span>
+        </div>
+      </div>
+    </div>
+    <p style="margin-top:8px; font-size:12px; color:#888;">Estrutura atual melhorada. Item ativo tem background + borda inferior cyan. Mais imediato, funciona bem no celular.</p>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">B — Nav com "pill" deslizante + ícones grandes</div>
+    <div class="mockup-body" style="background:#070d14; padding:0; overflow:hidden; border-radius:8px; min-height:260px; display:flex; flex-direction:column; justify-content:space-between;">
+      <!-- Header -->
+      <div style="padding:16px 16px 8px; border-bottom:1px solid rgba(0,200,180,0.1);">
+        <div style="font-family:'Rajdhani',sans-serif; font-size:9px; font-weight:600; letter-spacing:0.3em; color:#00c8b4; text-transform:uppercase;">Início</div>
+        <div style="font-family:'Rajdhani',sans-serif; font-size:20px; font-weight:700; color:#e0fff8; line-height:1;">Central de Comando</div>
+      </div>
+      <!-- Content -->
+      <div style="flex:1; padding:12px 16px; display:flex; flex-direction:column; gap:8px;">
+        <div style="background:rgba(0,200,180,0.06); border:1px solid rgba(0,200,180,0.12); border-radius:10px; padding:10px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-family:'Outfit',sans-serif; font-size:11px; color:#a0d8d0;">Estoque</span>
+          <span style="font-family:'Rajdhani',sans-serif; font-size:14px; font-weight:700; color:#00c8b4;">12 itens</span>
+        </div>
+        <div style="background:rgba(255,60,60,0.06); border:1px solid rgba(255,60,60,0.15); border-radius:10px; padding:10px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-family:'Outfit',sans-serif; font-size:11px; color:#d0a0a0;">Manutenção</span>
+          <span style="font-family:'Rajdhani',sans-serif; font-size:14px; font-weight:700; color:#ff5555;">2 atrasadas</span>
+        </div>
+      </div>
+      <!-- Pill nav -->
+      <div style="padding:8px 12px 10px;">
+        <div style="background:#0d1a24; border:1px solid rgba(0,200,180,0.12); border-radius:20px; padding:5px; display:grid; grid-template-columns:repeat(4,1fr); position:relative;">
+          <!-- Active pill -->
+          <div style="position:absolute; top:5px; left:5px; width:calc(25% - 2.5px); height:calc(100% - 10px); background:rgba(0,200,180,0.15); border:1px solid rgba(0,200,180,0.3); border-radius:14px; box-shadow:0 0 12px rgba(0,200,180,0.15);"></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 0; position:relative; z-index:1;">
+            <span style="font-size:15px;">🏠</span>
+            <span style="font-family:'Outfit',sans-serif; font-size:8px; font-weight:600; color:#00c8b4;">Início</span>
+          </div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 0; position:relative; z-index:1;">
+            <span style="font-size:15px; opacity:0.35;">📦</span>
+            <span style="font-family:'Outfit',sans-serif; font-size:8px; color:#2a5050;">Estoque</span>
+          </div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 0; position:relative; z-index:1;">
+            <span style="font-size:15px; opacity:0.35;">🔧</span>
+            <span style="font-family:'Outfit',sans-serif; font-size:8px; color:#2a5050;">Tarefas</span>
+          </div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 0; position:relative; z-index:1;">
+            <span style="font-size:15px; opacity:0.35;">⚙️</span>
+            <span style="font-family:'Outfit',sans-serif; font-size:8px; color:#2a5050;">Ajustes</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p style="margin-top:8px; font-size:12px; color:#888;">Nav dentro de um container arredondado, com "cápsula" iluminada deslizando para o item ativo. Visual de sistema mais refinado.</p>
+  </div>
+
+</div>
+
+<div style="margin-top:24px;">
+<div class="options">
+  <div class="option" data-choice="nav-a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Bottom nav com indicador ativo forte</h3>
+      <p>Background + borda inferior no item ativo. Mais direto, toque mais imediato.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="nav-b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Nav com "pill" deslizante</h3>
+      <p>Cápsula iluminada dentro de um container. Visual mais refinado e coeso.</p>
+    </div>
+  </div>
+</div>
+</div>

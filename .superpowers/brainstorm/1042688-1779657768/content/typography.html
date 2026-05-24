@@ -1,0 +1,73 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&family=IBM+Plex+Mono:wght@400;600&family=Rajdhani:wght@500;600;700&family=Outfit:wght@400;600;700;800&family=Fragment+Mono&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+
+<h2>Qual tipografia define o Mission Control?</h2>
+<p class="subtitle">A fonte é a voz do sistema — escolha a que soa certa</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="mono-sharp" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#070d14; padding:24px; min-height:200px; position:relative; overflow:hidden;">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(0,255,180,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,180,0.03) 1px,transparent 1px);background-size:20px 20px;"></div>
+      <div style="position:relative;">
+        <div style="font-family:'Fragment Mono',monospace;font-size:9px;letter-spacing:0.25em;color:#00ffa8;text-transform:uppercase;margin-bottom:14px;">SYS // RESIDENCIAL</div>
+        <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#e8fff8;letter-spacing:-1px;line-height:1;">Central de<br>Comando</div>
+        <div style="margin-top:16px;display:flex;flex-direction:column;gap:6px;">
+          <div style="font-family:'Fragment Mono',monospace;font-size:11px;color:#4aefb8;display:flex;justify-content:space-between;">
+            <span>ESTOQUE</span><span style="color:#00ffa8;">12 itens ●</span>
+          </div>
+          <div style="font-family:'Fragment Mono',monospace;font-size:11px;color:#ef4444;display:flex;justify-content:space-between;">
+            <span>MANUTENÇÃO</span><span>2 atrasadas ●</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Syne + Fragment Mono</h3>
+      <p>Títulos em Syne — ultrawide, geométrica, agressiva. Labels e dados em Fragment Mono — terminal puro. Contraste alto entre display e texto técnico.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="clean-tech" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#060c18; padding:24px; min-height:200px; position:relative; overflow:hidden;">
+      <div style="position:absolute;inset:0;background-image:radial-gradient(circle at 80% 20%, rgba(0,200,255,0.07) 0%, transparent 50%);"></div>
+      <div style="position:relative;">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.3em;color:#00c8ff;text-transform:uppercase;margin-bottom:12px;">Central Residencial</div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:36px;font-weight:700;color:#dff6ff;letter-spacing:0.5px;line-height:1.1;">Dashboard<br><span style="color:#00c8ff;">Overview</span></div>
+        <div style="margin-top:16px;">
+          <div style="font-family:'Outfit',sans-serif;font-size:12px;color:#7ab8cc;margin-bottom:4px;">Sistema operando normalmente</div>
+          <div style="font-family:'Outfit',sans-serif;font-size:11px;color:#3d6a7a;">Última sincronização: agora</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Rajdhani + Outfit</h3>
+      <p>Rajdhani para títulos — sci-fi, ligeiramente condensada, muito legível. Outfit para corpo — clean e moderna. Parecem feitas uma para a outra.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="ibm-system" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0a0a0f; padding:24px; min-height:200px; position:relative; overflow:hidden;">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#00ffcc,transparent);"></div>
+      <div style="position:relative;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:0.35em;color:#00ffcc;text-transform:uppercase;margin-bottom:16px;border-left:2px solid #00ffcc;padding-left:8px;">STATUS — ONLINE</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;color:#f0fff8;letter-spacing:-0.5px;line-height:1.2;">CENTRAL<br>RESIDENCIAL</div>
+        <div style="margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div style="border:1px solid rgba(0,255,200,0.15);padding:8px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:600;color:#00ffcc;">12</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#4a8a78;letter-spacing:0.1em;">ITEMS</div>
+          </div>
+          <div style="border:1px solid rgba(255,50,50,0.2);padding:8px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:600;color:#ff5555;">02</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#7a4a4a;letter-spacing:0.1em;">ALERTS</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>IBM Plex Mono (total)</h3>
+      <p>Toda a interface em monospace — visual de terminal de verdade. Zero serifas, zero grotescas modernas. Radical e coerente. Sente como um sistema operando.</p>
+    </div>
+  </div>
+
+</div>

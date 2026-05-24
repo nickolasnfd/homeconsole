@@ -1,0 +1,125 @@
+<h2>Qual direção visual para o redesign?</h2>
+<p class="subtitle">A Central de Comando Residencial — escolha a alma do novo visual</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="mission-control" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0a0f1a; padding:20px; min-height:180px; font-family: 'SF Mono', monospace; position:relative; overflow:hidden;">
+      <!-- Grid lines -->
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(0,255,200,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,200,0.04) 1px,transparent 1px);background-size:24px 24px;"></div>
+      <div style="position:relative;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#00ffc8;box-shadow:0 0 8px #00ffc8;animation:pulse 2s infinite;"></div>
+          <span style="color:#00ffc8;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;">SISTEMA ATIVO</span>
+        </div>
+        <div style="color:#e0fff8;font-size:18px;font-weight:800;letter-spacing:-0.5px;margin-bottom:4px;">Central de Comando</div>
+        <div style="color:#00ffc8;font-size:10px;letter-spacing:0.15em;margin-bottom:16px;">PAINEL RESIDENCIAL</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div style="background:rgba(0,255,200,0.06);border:1px solid rgba(0,255,200,0.15);border-radius:8px;padding:10px;">
+            <div style="color:#00ffc8;font-size:16px;font-weight:700;">12</div>
+            <div style="color:#6b9e94;font-size:9px;text-transform:uppercase;letter-spacing:0.1em;">Itens estoque</div>
+          </div>
+          <div style="background:rgba(255,60,60,0.06);border:1px solid rgba(255,60,60,0.2);border-radius:8px;padding:10px;">
+            <div style="color:#ff4444;font-size:16px;font-weight:700;">2</div>
+            <div style="color:#8e6b6b;font-size:9px;text-transform:uppercase;letter-spacing:0.1em;">Manutenções</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Mission Control</h3>
+      <p>Fundo quase-preto, grid sutil, cyan neon como cor principal. Lettering espaçado e uppercase. Parece um painel de controle real — sóbrio, técnico, memorável.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="warm-organic" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1c1208; padding:20px; min-height:180px; position:relative; overflow:hidden; font-family: Georgia, serif;">
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 30% 20%, rgba(255,180,60,0.12) 0%, transparent 60%),radial-gradient(ellipse at 80% 80%, rgba(180,100,30,0.1) 0%, transparent 50%);"></div>
+      <div style="position:relative;">
+        <div style="font-size:22px;font-weight:400;color:#f5d998;margin-bottom:2px;letter-spacing:-0.3px;">Casa</div>
+        <div style="font-size:11px;color:#a08060;margin-bottom:20px;font-style:italic;">tudo em dia, todo dia</div>
+        <div style="background:rgba(255,200,80,0.08);border:1px solid rgba(255,200,80,0.15);border-radius:16px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+          <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,180,60,0.15);display:flex;align-items:center;justify-content:center;font-size:18px;">🛒</div>
+          <div>
+            <div style="color:#f5d998;font-size:12px;font-weight:600;">3 itens para comprar</div>
+            <div style="color:#7a6040;font-size:10px;">sabão, arroz, detergente</div>
+          </div>
+        </div>
+        <div style="background:rgba(100,180,100,0.08);border:1px solid rgba(100,180,100,0.15);border-radius:16px;padding:12px;display:flex;align-items:center;gap:10px;">
+          <div style="width:36px;height:36px;border-radius:10px;background:rgba(100,200,100,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;">✓</div>
+          <div>
+            <div style="color:#a8d8a8;font-size:12px;font-weight:600;">Estoque saudável</div>
+            <div style="color:#507050;font-size:10px;">12 itens em ordem</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Warm Home</h3>
+      <p>Tons quentes escuros — âmbar, caramelo, verde suave. Serifa elegante para títulos. Sensação de aconchego, como um caderno de casa. Humaniza o app.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="clean-light" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f7f5f2; padding:20px; min-height:180px; position:relative; overflow:hidden; font-family: system-ui;">
+      <div style="position:relative;">
+        <div style="font-size:13px;font-weight:700;color:#1a1a1a;letter-spacing:-0.3px;margin-bottom:4px;">Central Residencial</div>
+        <div style="font-size:10px;color:#999;margin-bottom:16px;">Sábado, 24 de maio</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <div style="flex:1;background:white;border-radius:14px;padding:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+            <div style="font-size:20px;font-weight:800;color:#1a1a1a;">12</div>
+            <div style="font-size:9px;color:#aaa;margin-top:2px;">ITENS</div>
+            <div style="height:3px;background:#e0e0e0;border-radius:2px;margin-top:8px;overflow:hidden;">
+              <div style="width:70%;height:100%;background:#2563eb;border-radius:2px;"></div>
+            </div>
+          </div>
+          <div style="flex:1;background:#fff5f5;border-radius:14px;padding:12px;border:1px solid #fee2e2;">
+            <div style="font-size:20px;font-weight:800;color:#dc2626;">2</div>
+            <div style="font-size:9px;color:#aaa;margin-top:2px;">ATENÇÃO</div>
+            <div style="height:3px;background:#fecaca;border-radius:2px;margin-top:8px;overflow:hidden;">
+              <div style="width:30%;height:100%;background:#dc2626;border-radius:2px;"></div>
+            </div>
+          </div>
+        </div>
+        <div style="background:white;border-radius:14px;padding:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);display:flex;align-items:center;gap:8px;">
+          <div style="width:28px;height:28px;border-radius:8px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:13px;">🔧</div>
+          <div style="font-size:11px;color:#333;font-weight:500;">Filtro de ar — vence em 3 dias</div>
+          <div style="margin-left:auto;font-size:9px;color:#f59e0b;font-weight:600;">URGENTE</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Clean Light</h3>
+      <p>Fundo quase-branco, cards com sombra sutil, tipografia preta densa. Visual como aplicativo de banco moderno — confiável, legível, focado em dados.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="brutalist-utility" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f2f0eb; padding:20px; min-height:180px; font-family: 'Courier New', monospace; position:relative; overflow:hidden;">
+      <div style="border:2px solid #1a1a1a;border-radius:0;padding:12px;margin-bottom:8px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:#1a1a1a;border-bottom:1px solid #1a1a1a;padding-bottom:6px;margin-bottom:8px;">CASA / STATUS</div>
+        <div style="display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;font-size:10px;color:#333;align-items:baseline;">
+          <span style="font-weight:700;color:#e00;">!</span><span>Sabão em falta</span><span style="color:#999;">EST.</span>
+          <span style="font-weight:700;color:#e00;">!</span><span>Filtro de ar vence</span><span style="color:#999;">MAN.</span>
+          <span style="color:#888;">·</span><span>Arroz — OK</span><span style="color:#999;">EST.</span>
+          <span style="color:#888;">·</span><span>Revisão elétrica</span><span style="color:#999;">MAN.</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <div style="flex:1;border:2px solid #1a1a1a;padding:8px;text-align:center;">
+          <div style="font-size:22px;font-weight:900;color:#1a1a1a;">12</div>
+          <div style="font-size:8px;text-transform:uppercase;letter-spacing:0.1em;">Estoque</div>
+        </div>
+        <div style="flex:1;border:2px solid #e00;padding:8px;text-align:center;">
+          <div style="font-size:22px;font-weight:900;color:#e00;">2</div>
+          <div style="font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:#e00;">Urgente</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Utilidade Brutal</h3>
+      <p>Fundo creme, bordas pretas, zero gradiente. Tipografia monoespaçada. Como um terminal ou lista de controle física. Radicalmente diferente, altamente funcional.</p>
+    </div>
+  </div>
+
+</div>
