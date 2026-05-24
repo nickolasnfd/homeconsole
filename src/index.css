@@ -2,112 +2,61 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
-    /* Residential Command Center — Dark Slate + Cyan accent */
-    --background: 222 38% 11%;
-    --foreground: 210 40% 98%;
+    /* Mission Control — deep dark + cyan */
+    --background: 217 64% 6%;
+    --foreground: 164 37% 90%;
 
-    --card: 220 32% 16%;
-    --card-foreground: 210 40% 98%;
+    --card: 215 52% 10%;
+    --card-foreground: 164 37% 90%;
 
-    --popover: 220 32% 16%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 215 52% 10%;
+    --popover-foreground: 164 37% 90%;
 
-    /* Cyan accent #22d3ee-ish */
-    --primary: 187 92% 55%;
-    --primary-foreground: 222 47% 11%;
+    /* Cyan principal */
+    --primary: 172 100% 41%;
+    --primary-foreground: 217 64% 6%;
 
-    --secondary: 220 28% 22%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 213 48% 13%;
+    --secondary-foreground: 164 37% 90%;
 
-    --muted: 220 25% 20%;
-    --muted-foreground: 215 20% 70%;
+    --muted: 213 48% 13%;
+    --muted-foreground: 164 25% 38%;
 
-    --accent: 187 92% 55%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 172 100% 41%;
+    --accent-foreground: 217 64% 6%;
 
-    --destructive: 0 84% 62%;
+    --destructive: 0 100% 64%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 152 70% 45%;
+    --success: 152 84% 39%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 95% 58%;
-    --warning-foreground: 222 47% 11%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 217 64% 6%;
 
-    --border: 220 25% 22%;
-    --input: 220 25% 22%;
-    --ring: 187 92% 55%;
+    /* Border neutro para inputs/dividers; cards usam border-primary/10 */
+    --border: 213 35% 18%;
+    --input: 213 40% 15%;
+    --ring: 172 100% 41%;
 
-    --radius: 1.25rem;
+    --radius: 0.875rem;
 
-    --gradient-primary: linear-gradient(135deg, hsl(187 92% 60%), hsl(195 90% 50%));
-    --gradient-card: linear-gradient(160deg, hsl(220 32% 18%), hsl(222 38% 13%));
-    --gradient-cyan-soft: linear-gradient(135deg, hsl(187 92% 60% / 0.18), hsl(195 90% 50% / 0.05));
+    --gradient-primary: linear-gradient(135deg, hsl(172 100% 41%), hsl(185 100% 38%));
+    --shadow-card: 0 1px 3px 0 hsl(217 64% 2% / 0.5), 0 8px 24px -8px hsl(217 64% 2% / 0.6);
+    --shadow-elevated: 0 10px 30px -8px hsl(217 64% 2% / 0.7), 0 4px 10px -2px hsl(217 64% 2% / 0.4);
+    --shadow-fab: 0 8px 24px -4px hsl(172 100% 41% / 0.4), 0 4px 12px -2px hsl(172 100% 41% / 0.25);
+    --shadow-glow: 0 0 20px hsl(172 100% 41% / 0.3);
 
-    --shadow-card: 0 1px 2px 0 hsl(222 50% 4% / 0.4), 0 8px 24px -8px hsl(222 50% 4% / 0.5);
-    --shadow-elevated: 0 10px 30px -8px hsl(222 60% 4% / 0.6), 0 4px 10px -2px hsl(222 60% 4% / 0.3);
-    --shadow-fab: 0 10px 30px -6px hsl(187 92% 50% / 0.55), 0 4px 12px -2px hsl(187 92% 50% / 0.35);
-    --shadow-glow: 0 0 24px hsl(187 92% 55% / 0.35);
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 215 52% 10%;
+    --sidebar-foreground: 164 37% 90%;
+    --sidebar-primary: 172 100% 41%;
+    --sidebar-primary-foreground: 217 64% 6%;
+    --sidebar-accent: 213 48% 13%;
+    --sidebar-accent-foreground: 164 37% 90%;
+    --sidebar-border: 213 35% 18%;
+    --sidebar-ring: 172 100% 41%;
   }
 }
 
@@ -118,19 +67,92 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    font-feature-settings: 'cv11', 'ss01';
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Grid overlay global */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+    background-image:
+      linear-gradient(hsl(172 100% 41% / 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(172 100% 41% / 0.025) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  /* Ambient glows */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 40% at 5% 5%, hsl(172 100% 41% / 0.07) 0%, transparent 100%),
+      radial-gradient(ellipse 50% 35% at 95% 90%, hsl(200 100% 50% / 0.04) 0%, transparent 100%);
   }
 }
 
 @layer utilities {
-  .shadow-card { box-shadow: var(--shadow-card); }
+  .shadow-card    { box-shadow: var(--shadow-card); }
   .shadow-elevated { box-shadow: var(--shadow-elevated); }
-  .shadow-fab { box-shadow: var(--shadow-fab); }
-  .shadow-glow { box-shadow: var(--shadow-glow); }
+  .shadow-fab     { box-shadow: var(--shadow-fab); }
+  .shadow-glow    { box-shadow: var(--shadow-glow); }
+
   .bg-gradient-primary { background-image: var(--gradient-primary); }
-  .bg-gradient-card { background-image: var(--gradient-card); }
-  .bg-gradient-cyan-soft { background-image: var(--gradient-cyan-soft); }
+
+  /* Linha de topo em cards Mission Control */
+  .card-highlight::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, hsl(172 100% 41% / 0.5), transparent);
+    pointer-events: none;
+  }
+
+  /* Utilitários de tipografia */
+  .font-display { font-family: 'Rajdhani', sans-serif; }
+  .font-body    { font-family: 'Outfit', sans-serif; }
+  .label-upper  {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  /* Badges semânticos */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.625rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 99px;
+    letter-spacing: 0.04em;
+  }
+  .badge-red    { background: hsl(0 100% 64% / 0.1);   color: hsl(0 100% 64%);   border: 1px solid hsl(0 100% 64% / 0.2); }
+  .badge-amber  { background: hsl(38 92% 50% / 0.1);   color: hsl(38 92% 50%);   border: 1px solid hsl(38 92% 50% / 0.2); }
+  .badge-green  { background: hsl(152 84% 39% / 0.1);  color: hsl(152 84% 39%);  border: 1px solid hsl(152 84% 39% / 0.2); }
+  .badge-cyan   { background: hsl(172 100% 41% / 0.1); color: hsl(172 100% 41%); border: 1px solid hsl(172 100% 41% / 0.2); }
+
+  /* Barra de status lateral (manutenção) */
+  .status-bar {
+    width: 3px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    align-self: stretch;
+  }
+  .status-bar-red   { background: hsl(0 100% 64%);  box-shadow: 0 0 8px hsl(0 100% 64% / 0.5); }
+  .status-bar-amber { background: hsl(38 92% 50%); }
+  .status-bar-green { background: hsl(152 84% 39%); }
+  .status-bar-muted { background: hsl(164 25% 38%); }
+
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
   .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
   .scrollbar-none::-webkit-scrollbar { display: none; }
